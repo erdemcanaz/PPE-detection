@@ -13,7 +13,8 @@ def display_single_ip_camera_stream(username = None, password= None, ip_address 
 
     # Replace with your camera's URL and credentials
     url = f'rtsp://{username}:{password}@{ip_address}/{stream_path}'
-
+    print(f'Using URL: {url}')
+    
     # Set up a video capture object
     cap = cv2.VideoCapture(url)
 
