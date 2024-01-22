@@ -1,0 +1,7 @@
+#ignore all files containing "secret" in its name
+*secret* 
+
+*__pycache__
+
+#ignore the python environment
+*env
