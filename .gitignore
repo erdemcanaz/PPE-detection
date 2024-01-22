@@ -3,6 +3,9 @@
 #ignore all files located at local folder
 *local
 
+#ignore all files with high size
+*model
+
 *__pycache__
 
 #ignore the python environment
