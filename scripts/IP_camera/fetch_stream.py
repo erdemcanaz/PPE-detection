@@ -2,6 +2,77 @@ import cv2
 import numpy as np
 import time, threading
 
+
+class IPcameraSuperior:
+    def __init__(self, IPcamera_watcher_objects = []):
+        
+        pass
+
+class IPCameraWatcher: 
+    def __init__(self, camera_name = None, camera_information = None, username = None, password = None, ip_address = None, stream_path = None, frame_width = None, frame_height = None, VERBOSE=False):
+        self.camera_name = camera_name
+        self.camera_info = camera_information
+        self.username = username
+        self.password = password
+        self.ip_address = ip_address
+        self.stream_path = stream_path
+        self.width = frame_width
+        self.height = frame_height
+        self.VERBOSE = VERBOSE
+        self.latest_frame = None
+        self.latest_frame_timestamp = None
+        self.running = False
+
+    def __str__ (self):
+        return f'IPCameraWatcher object: {self.camera_name} ({self.ip_address})'
+    
+    def __repr__ (self):
+        return f'IPCameraWatcher object: {self.camera_name} ({self.ip_address})'
+
+    def start_watching(self):
+        self.running = True
+        self.thread = threading.Thread(target=self._watch_camera)
+        self.thread.daemon = True  # Set the thread as a daemon
+        self.thread.start()
+
+    def _watch_camera(self):
+        url = f'rtsp://{self.username}:{self.password}@{self.ip_address}/{self.stream_path}'  
+        cap = cv2.VideoCapture(url)
+
+        while self.running:
+            ret, frame = cap.read()
+            if ret:
+                if self.VERBOSE:print(f'Got a frame from {self._get_formatted_url()}')
+                self.latest_frame = frame
+                self.latest_frame_timestamp = time.time()
+            else:
+                break
+
+        cap.release()
+
+    def stop_watching(self):
+        self.running = False
+        self.thread.join()
+
+    def is_watching(self):
+        return self.running
+
+    def get_latest_frame(self):
+        return self.latest_frame
+    
+    def get_latest_frame_timestamp(self):
+        return self.latest_frame_timestamp
+    
+    def _get_formatted_url(self, is_secret = True):
+        #if is_secret is True, then the username and password will be replaced with <USERNAME> and <PASSWORD>
+
+        if is_secret:
+            return f'rtsp://<USERNAME>:<PASSWORD>@{self.ip_address}'
+        else:           
+            return f'rtsp://{self.username}:{self.password}@{self.ip_address}/{self.stream_path}'
+
+
+
 def _display_single_ip_camera_stream(username = None, password= None, ip_address = None, stream_path = None, VERBOSE = False):
 
     if username == None or password == None or ip_address == None or stream_path == None:
@@ -59,56 +130,3 @@ def _capture_single_frame_from_ip_camera(camera_name = "No-Name", username = Non
 
     return frame
 
-class IPCameraWatcher: 
-    def __init__(self, camera_name, camera_information, username, password, ip_address, stream_path, width, height, VERBOSE=False):
-        self.camera_name = camera_name
-        self.camera_info = camera_information
-        self.username = username
-        self.password = password
-        self.ip_address = ip_address
-        self.stream_path = stream_path
-        self.width = width
-        self.height = height
-        self.VERBOSE = VERBOSE
-        self.latest_frame = None
-        self.latest_frame_timestamp = None
-        self.running = False
-
-    def start_watching(self):
-        self.running = True
-        self.thread = threading.Thread(target=self._watch_camera)
-        self.thread.daemon = True  # Set the thread as a daemon
-        self.thread.start()
-
-    def _watch_camera(self):
-        url = f'rtsp://{self.username}:{self.password}@{self.ip_address}/{self.stream_path}'  
-        cap = cv2.VideoCapture(url)
-
-        while self.running:
-            ret, frame = cap.read()
-            if ret:
-                if self.VERBOSE:print(f'Got a frame from {self._get_formatted_url()}')
-                self.latest_frame = frame
-                self.latest_frame_timestamp = time.time()
-            else:
-                break
-
-        cap.release()
-
-    def stop_watching(self):
-        self.running = False
-        self.thread.join()
-
-    def get_latest_frame(self):
-        return self.latest_frame
-    
-    def get_latest_frame_timestamp(self):
-        return self.latest_frame_timestamp
-    
-    def _get_formatted_url(self, is_secret = True):
-        #if is_secret is True, then the username and password will be replaced with <USERNAME> and <PASSWORD>
-
-        if is_secret:
-            return f'rtsp://<USERNAME>:<PASSWORD>@{self.ip_address}'
-        else:           
-            return f'rtsp://{self.username}:{self.password}@{self.ip_address}/{self.stream_path}'

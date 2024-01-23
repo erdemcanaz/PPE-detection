@@ -1,4 +1,4 @@
-import json
+import json, pprint
 
 import cv2
 import numpy as np
@@ -11,24 +11,27 @@ import scripts.object_detection.detect_ppe
 with open('secret_camera_info.json') as file:
     cameras = json.load(file)
 
-cam_48_watcher = scripts.IP_camera.fetch_stream.IPCameraWatcher(**cameras["cam_48"])
-cam_48_watcher.start_watching()
+camera_watchers = []
 
-cam_47_watcher = scripts.IP_camera.fetch_stream.IPCameraWatcher(**cameras["cam_47"])
-cam_47_watcher.start_watching()
+for camera_id, camera_values in cameras["server_3"]["connected_cameras"].items():
+    camera_watcher_object = scripts.IP_camera.fetch_stream.IPCameraWatcher(
+        camera_name= camera_values["camera_name"],
+        camera_information= camera_values["camera_information"],
+        username= camera_values["username"],
+        password= camera_values["password"],
+        ip_address= camera_values["ip_address"],
+        stream_path= camera_values["stream_path"],
+        frame_width= camera_values["frame_width"],
+        frame_height= camera_values["frame_height"],          
+        VERBOSE=True
+    )
 
-def stack_frames(frames, rows, cols):
-    if len(frames) != rows * cols:
-        raise ValueError("Number of frames does not match the specified grid dimensions")
+    camera_watchers.append(camera_watcher_object)
 
-    # Split the frames into rows
-    frame_rows = [frames[i * cols:(i + 1) * cols] for i in range(rows)]
+print(camera_watchers)
+print(camera_watchers[0])
 
-    # Horizontally stack frames in each row
-    stacked_rows = [np.hstack(row) for row in frame_rows]
-
-    # Vertically stack the rows
-    return np.vstack(stacked_rows)
+exit()
 
 while True:
     # Fetch the latest frames from each camera
