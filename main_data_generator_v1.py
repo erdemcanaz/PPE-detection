@@ -5,10 +5,11 @@ import numpy as np
 
 import scripts.IP_camera.fetch_stream
 import scripts.object_detection.detect_ppe
+import scripts.object_detection.detect_pose
 
 def create_grid(frames, grid_size=(3, 3)):
     # Determine window size and cell size
-    window_height, window_width = 600, 800  # You can adjust this size
+    window_height, window_width = 800, 1200  # You can adjust this size
     cell_height, cell_width = window_height // grid_size[0], window_width // grid_size[1]
 
     # Resize frames to fit cell size
@@ -42,8 +43,15 @@ while True:
     camera_superviser.fetch_last_stream()
     fetched_frames = camera_superviser.get_last_fetched_frames_simple()
     
+    
     # Create a 3x3 grid of frames
     if fetched_frames != None:
+
+        for frame in fetched_frames:
+            if isinstance(frame,np.ndarray):
+                scripts.object_detection.detect_pose.detect_and_update_frame(frame, confidence_threshold = 0.2)
+                print("pose detected")
+
         grid = create_grid(fetched_frames, grid_size=(3, 3))
 
         # Display the grid
