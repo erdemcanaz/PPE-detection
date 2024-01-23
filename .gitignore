@@ -1,12 +1,11 @@
 #ignore all files containing "secret" in its name
 *secret* 
 #ignore all files located at local folder
-*local
-
-#ignore all files with high size
-*model
+*local/*
 
 *__pycache__
 
 #ignore the python environment
 *env
+
+!local

@@ -1,0 +1,7 @@
+*videos/*
+*images/*
+*models/*
+
+!videos
+!images
+!models
