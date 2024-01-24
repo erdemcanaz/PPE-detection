@@ -7,6 +7,7 @@ class IPcameraSupervisor:
         #IPcamera_watcher_objects is a list of IPcameraWatcher objects
         #MAX_ACTIVE_STREAMS is the maximum number of active streams that can be watched at once
         #VERBOSE is a boolean that determines if the program will print out messages
+        #MIN_CAMERA_STATUS_DELAY_s is the minimum delay between updating the camera status (in seconds), (i.e changing the watching status of the cameras)
 
         self.IPcamera_watcher_objects = IPcamera_watcher_objects
         self.active_camera_objects = [] #list of camera objects that are currently being watched
@@ -15,7 +16,7 @@ class IPcameraSupervisor:
 
         for camera_object in self.IPcamera_watcher_objects:
             self.all_camera_names.append(camera_object.camera_name)
-
+        
         self.MAX_ACTIVE_STREAMS = MAX_ACTIVE_STREAMS
         self.LAST_TIME_STATUS_UPDATED = 0
         self.MIN_CAMERA_STATUS_DELAY_s = MIN_CAMERA_STATUS_DELAY_s
@@ -24,8 +25,14 @@ class IPcameraSupervisor:
     def __str__ (self):
         return f'IPcameraSuperior object: {len(self.IPcamera_watcher_objects)} camera(s) are being governed by this object'
             
-    def watch_random_cameras(self):     
-        random_camera_names = random.sample(self.all_camera_names, self.MAX_ACTIVE_STREAMS)
+    def watch_random_cameras(self, overwriting_name_list = []):
+
+        number_of_cameras = len(self.all_camera_names)
+        sample_size = min(number_of_cameras, self.MAX_ACTIVE_STREAMS)
+        random_camera_names = random.sample(self.all_camera_names, sample_size)
+
+        for i in range(min(len(overwriting_name_list), sample_size)):
+            random_camera_names[i] = overwriting_name_list[i]
         self.watch_cameras_by_camera_name(random_camera_names)
 
     def watch_cameras_by_camera_name(self, activated_camera_names = []):
@@ -94,10 +101,9 @@ class IPcameraSupervisor:
                 if camera_watcher_object.is_watching():
                     if self.VERBOSE:print(f"    Stopping to watch {camera_watcher_object.camera_name}")
                     camera_watcher_object.stop_watching()
-
-        
+    
 class IPCameraWatcher: 
-    def __init__(self, camera_name = None, camera_information = None, username = None, password = None, ip_address = None, stream_path = None, frame_width = None, frame_height = None, VERBOSE=False):
+    def __init__(self,  camera_name = None, camera_information = None, username = None, password = None, ip_address = None, stream_path = None, frame_width = None, frame_height = None, VERBOSE=False):
         self.camera_name = camera_name
         self.camera_info = camera_information
         self.username = username
@@ -126,6 +132,11 @@ class IPCameraWatcher:
     def _watch_camera(self):
         url = f'rtsp://{self.username}:{self.password}@{self.ip_address}/{self.stream_path}'  
         cap = cv2.VideoCapture(url)
+
+        # Attempt to set the buffer size to a specific number of frames
+        # Note: This may not work with all cameras and drivers.
+        buffer_size_in_frames = 1
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, buffer_size_in_frames)
 
         while self.running:
             ret, frame = cap.read()
@@ -158,62 +169,3 @@ class IPCameraWatcher:
             return f'rtsp://<USERNAME>:<PASSWORD>@{self.ip_address}'
         else:           
             return f'rtsp://{self.username}:{self.password}@{self.ip_address}/{self.stream_path}'
-
-
-def _display_single_ip_camera_stream(username = None, password= None, ip_address = None, stream_path = None, VERBOSE = False):
-
-    if username == None or password == None or ip_address == None or stream_path == None:
-        print("Error: username, password, ip_address, or stream_path is None")
-        return None
-
-    # Replace with your camera's URL and credentials
-    url = f'rtsp://{username}:{password}@{ip_address}/{stream_path}'
-    if(VERBOSE):print(f'Using URL: {url}')
-    
-    # Set up a video capture object
-    cap = cv2.VideoCapture(url)
-
-    # Read from the video capture in a loop
-    while True:
-        ret, frame = cap.read()
-        if ret:
-            # Process the frame (e.g., display it)
-            cv2.imshow('IP Camera Stream', frame)
-
-            # Break the loop if 'q' is pressed
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-        else:
-            break
-
-    # Release the capture object and close any OpenCV windows
-    cap.release()
-    cv2.destroyAllWindows()
-
-def _capture_single_frame_from_ip_camera(camera_name = "No-Name", username = None, password= None, ip_address = None, stream_path = None, VERBOSE = False):
-    if username == None or password == None or ip_address == None or stream_path == None:
-        print("Error: username, password, ip_address, or stream_path is None")
-        return None
-    
-    # Form the camera's URL
-    url = f'rtsp://{username}:{password}@{ip_address}/{stream_path}'
-
-    if VERBOSE:print(f'{camera_name}: fetching single frame from {url}')
-    
-    # Set up a video capture object
-    cap = cv2.VideoCapture(url)
-
-    # Capture a single frame
-    ret, frame = cap.read()
-    if ret:
-        # You can process the frame here
-        # For example, you can display it:
-        cv2.imshow('IP Camera Frame', frame)
-        cv2.waitKey(0)  # Wait for a key press to close the window
-        cv2.destroyAllWindows()
-
-    # Release the capture object
-    cap.release()
-
-    return frame
-
