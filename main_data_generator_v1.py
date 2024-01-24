@@ -1,4 +1,4 @@
-import json, pprint,time, random, math, copy, uuid
+import json, pprint,time, random, math, copy, uuid, os
 
 import cv2
 import numpy as np
@@ -36,18 +36,21 @@ for camera_id, camera_values in cameras["server_3"]["connected_cameras"].items()
     camera_watchers.append(camera_watcher_object)
 
 
-camera_superviser = scripts.IP_camera.fetch_stream.IPcameraSupervisor(camera_watchers, MAX_ACTIVE_STREAMS=9, MIN_CAMERA_STATUS_DELAY_s= 10,  VERBOSE= True)
+camera_superviser = scripts.IP_camera.fetch_stream.IPcameraSupervisor(camera_watchers, MAX_ACTIVE_STREAMS=4, MIN_CAMERA_STATUS_DELAY_s= 10,  VERBOSE= True)
 camera_superviser.watch_random_cameras([
     "s3-camera 50",    
 ])
 
-APPLY_OBJECT_DETECTION_MODEL = False
+APPLY_OBJECT_DETECTION_MODEL = True
 OBJECT_DETECTION_FUNCTION = scripts.object_detection.detect_pose.detect_and_update_frame
 SAVE_PATH = "local/saved_images" 
 if(SAVE_PATH != None):
     r = input(f"Do you want to save the images to path '{SAVE_PATH}'? (yes/no)")
     if(r != "yes"):
         raise Exception("User did not want to save the images to the specified path")
+    else:
+        if not os.path.exists(SAVE_PATH):
+            os.makedirs(SAVE_PATH)
 
 while True:    
     camera_superviser.fetch_last_stream()
@@ -56,12 +59,14 @@ while True:
     # Create a nxn grid of frames
     if fetched_frames != None:
 
+
+        original_frames = copy.deepcopy(fetched_frames)
+
         if APPLY_OBJECT_DETECTION_MODEL:
             for frame in fetched_frames:
                 if isinstance(frame,np.ndarray):
                     OBJECT_DETECTION_FUNCTION(frame, confidence_threshold = 0.2)    
-
-        original_frames = copy.deepcopy(fetched_frames)
+                    
         grid_dimension =  math.ceil(math.sqrt(len(fetched_frames)))
         grid = create_grid(fetched_frames, grid_size=(grid_dimension, grid_dimension))
         
