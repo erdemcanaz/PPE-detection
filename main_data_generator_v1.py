@@ -35,15 +35,15 @@ for camera_id, camera_values in cameras["server_3"]["connected_cameras"].items()
     camera_watcher_object = scripts.IP_camera.fetch_stream.IPCameraWatcher(**camera_values)
     camera_watchers.append(camera_watcher_object)
 
-
-camera_superviser = scripts.IP_camera.fetch_stream.IPcameraSupervisor(camera_watchers, MAX_ACTIVE_STREAMS=4, MIN_CAMERA_STATUS_DELAY_s= 10,  VERBOSE= True)
-camera_superviser.watch_random_cameras([
-    "s3-camera 50",    
-])
-
+NUMBER_OF_CAMERAS_TO_WATCH = 9 #you can save images only from the first 9 cameras, otherwise you need to change the save keys
 APPLY_OBJECT_DETECTION_MODEL = True
 OBJECT_DETECTION_FUNCTION = scripts.object_detection.detect_pose.detect_and_update_frame
 SAVE_PATH = "local/saved_images" 
+
+camera_superviser = scripts.IP_camera.fetch_stream.IPcameraSupervisor(camera_watchers, MAX_ACTIVE_STREAMS=NUMBER_OF_CAMERAS_TO_WATCH, MIN_CAMERA_STATUS_DELAY_s= 10,  VERBOSE= True)
+camera_superviser.watch_random_cameras([   
+])
+
 if(SAVE_PATH != None):
     r = input(f"Do you want to save the images to path '{SAVE_PATH}'? (yes/no)")
     if(r != "yes"):
@@ -76,7 +76,7 @@ while True:
        
 
         save_keys = [ord(str(i)) for i in range(1,10)]
-        key = cv2.waitKey() & 0xFF  # Wait for a key press and mask with 0xFF
+        key = cv2.waitKey(1) & 0xFF  # Wait for a key press and mask with 0xFF
 
         if key == ord('q'):  # Compare against the ASCII value of 'q'
             break
