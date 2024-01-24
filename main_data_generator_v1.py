@@ -38,11 +38,7 @@ for camera_id, camera_values in cameras["server_3"]["connected_cameras"].items()
 
 camera_superviser = scripts.IP_camera.fetch_stream.IPcameraSupervisor(camera_watchers, MAX_ACTIVE_STREAMS=9, MIN_CAMERA_STATUS_DELAY_s= 10,  VERBOSE= True)
 camera_superviser.watch_random_cameras([
-    "s3-camera 50",
-    "s3-camera 35",
-    "s3-camera 36",
-    "s3-camera 37",
-    "s3-camera 42"
+    "s3-camera 50",    
 ])
 
 APPLY_OBJECT_DETECTION_MODEL = False
@@ -73,17 +69,19 @@ while True:
         cv2.imshow("Camera Grid", grid)        
         date = time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime())
        
+
+        save_keys = [ord(str(i)) for i in range(1,10)]
         key = cv2.waitKey() & 0xFF  # Wait for a key press and mask with 0xFF
+
         if key == ord('q'):  # Compare against the ASCII value of 'q'
             break
         elif key == ord('s'):
-            continue
-        save_keys = [ord(str(i)) for i in range(1,10)]
-        if key in save_keys:
+            continue   
+        elif key == ord('r'):
+            camera_superviser.watch_random_cameras(["s3-camera 50"])
+        elif key in save_keys:
             uuid_for_frame = uuid.uuid4()
             cv2.imwrite(f"{SAVE_PATH}/secret_data_{date}_{uuid_for_frame}.jpg", original_frames[key - save_keys[0]])
-
-        
-
+      
 cv2.destroyAllWindows()
 

@@ -11,6 +11,8 @@ class IPcameraSupervisor:
 
         self.IPcamera_watcher_objects = IPcamera_watcher_objects
         self.active_camera_objects = [] #list of camera objects that are currently being watched
+        self.active_camera_names = [] #list of camera object's names that are currently being watched
+        self.inactive_camera_names = [] #list of camera object's names that are currently not being watched
         self.all_camera_names = [] #list of camera object's names under this supervisor
         self.fetched_frames = {} #{camera_name:{frame:None, timestamp:None}, ...}
 
@@ -26,7 +28,6 @@ class IPcameraSupervisor:
         return f'IPcameraSuperior object: {len(self.IPcamera_watcher_objects)} camera(s) are being governed by this object'
             
     def watch_random_cameras(self, overwriting_name_list = []):
-
         number_of_cameras = len(self.all_camera_names)
         sample_size = min(number_of_cameras, self.MAX_ACTIVE_STREAMS)
         random_camera_names = random.sample(self.all_camera_names, sample_size)
@@ -34,6 +35,7 @@ class IPcameraSupervisor:
         for i in range(min(len(overwriting_name_list), sample_size)):
             random_camera_names[i] = overwriting_name_list[i]
         self.watch_cameras_by_camera_name(random_camera_names)
+        print(random_camera_names)
 
     def watch_cameras_by_camera_name(self, activated_camera_names = []):
         if time.time() - self.LAST_TIME_STATUS_UPDATED < self.MIN_CAMERA_STATUS_DELAY_s:
@@ -72,9 +74,9 @@ class IPcameraSupervisor:
             frame =camera_object.get_latest_frame()
             timestamp = camera_object.get_latest_frame_timestamp()
 
-
             if camera_object.camera_name not in self.fetched_frames.keys():
-               self.fetched_frames[camera_object.camera_name] = {"frame":None, "timestamp":0}            
+               self.fetched_frames[camera_object.camera_name] = {"camera_name": "No-name", "frame":None, "timestamp":0}            
+            self.fetched_frames[camera_object.camera_name]["camera_name"] = camera_object.camera_name
             self.fetched_frames[camera_object.camera_name]["frame"] = frame
             self.fetched_frames[camera_object.camera_name]["timestamp"] = timestamp
 
@@ -83,9 +85,14 @@ class IPcameraSupervisor:
         
         if(self.VERBOSE):print(f"    {counter} frames fetched are less than 1 minute old")
     
-    def get_last_fetched_frames_simple(self):
+    def get_last_fetched_frames_simple(self, only_active_cameras = True):
         frames = []
         for camera_name, frame_info in self.fetched_frames.items():
+            if only_active_cameras:
+                self._update_active_and_inactive_camera_names()
+                if camera_name not in self.active_camera_names:
+                    continue
+
             frames.append(frame_info["frame"]) 
         return frames
     
@@ -102,6 +109,16 @@ class IPcameraSupervisor:
                     if self.VERBOSE:print(f"    Stopping to watch {camera_watcher_object.camera_name}")
                     camera_watcher_object.stop_watching()
     
+    def _update_active_and_inactive_camera_names(self):
+        self.active_camera_names = []
+        self.inactive_camera_names = []
+
+        for camera_object in self.active_camera_objects:
+            self.active_camera_names.append(camera_object.camera_name)
+        for camera_name in self.all_camera_names:
+            if camera_name not in self.active_camera_names:
+                self.inactive_camera_names.append(camera_name)
+
 class IPCameraWatcher: 
     def __init__(self,  camera_name = None, camera_information = None, username = None, password = None, ip_address = None, stream_path = None, frame_width = None, frame_height = None, VERBOSE=False):
         self.camera_name = camera_name
