@@ -1,9 +1,9 @@
 *videos/*
 *images/*
 *models/*
-*datasets/*
+*data/*
 
-!datasets
+!data
 !videos
 !images
 !models
