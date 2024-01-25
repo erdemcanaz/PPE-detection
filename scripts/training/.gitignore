@@ -2,7 +2,9 @@
 *images/*
 *models/*
 *data/*
+*training_results/*
 
+!training_results
 !data
 !videos
 !images
