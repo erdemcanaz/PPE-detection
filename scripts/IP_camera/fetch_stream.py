@@ -96,6 +96,19 @@ class IPcameraSupervisor:
             frames.append(frame_info["frame"]) 
         return frames
     
+    def get_last_fetched_frames_detailed(self, only_active_cameras = True):
+        #returns a list of lists, each list contains the camera name, frame, and timestamp in order
+        frames = []
+        for camera_name, frame_info in self.fetched_frames.items():
+            if only_active_cameras:
+                self._update_active_and_inactive_camera_names()
+                if camera_name not in self.active_camera_names:
+                    continue
+
+            frame_details = [frame_info["camera_name"], frame_info["frame"], frame_info["timestamp"]]
+            frames.append(frame_details) 
+        return frames
+    
     def _update_cameras_watching_status(self):  
         if self.VERBOSE:print("\ncamera watching status are being updated")
         self.LAST_TIME_STATUS_UPDATED = time.time()

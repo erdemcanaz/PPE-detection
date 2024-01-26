@@ -8,10 +8,18 @@ import scripts.object_detection.detect_ppe_26_01_2024
 #import scripts.object_detection.detect_ppe
 #import scripts.object_detection.detect_pose
 
-def create_grid(frames, grid_size=(1, 1)):
+def create_grid(frame_details, grid_size=(1, 1)):
     # Determine window size and cell size
     window_height, window_width = 720, 1280  # You can adjust this size
     cell_height, cell_width = window_height // grid_size[0], window_width // grid_size[1]
+
+    frames = []
+    for frame_detail in frame_details:
+        camera_name = frame_detail[0]
+        fame = frame_detail[1]
+
+        camera_name_added_frame = cv2.putText(fame, camera_name, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 4, cv2.LINE_AA)
+        frames.append(camera_name_added_frame)
 
     # Resize frames to fit cell size
     resized_frames = [cv2.resize(frame, (cell_width, cell_height)) for frame in frames]
@@ -37,7 +45,7 @@ for camera_id, camera_values in cameras["server_21"]["connected_cameras"].items(
         camera_watcher_object = scripts.IP_camera.fetch_stream.IPCameraWatcher(**camera_values)
         camera_watchers.append(camera_watcher_object)
 
-NUMBER_OF_CAMERAS_TO_WATCH = 18 #you can save images only from the first 9 cameras, otherwise you need to change the save keys
+NUMBER_OF_CAMERAS_TO_WATCH = 9 #you can save images only from the first 9 cameras, otherwise you need to change the save keys
 APPLY_OBJECT_DETECTION_MODEL = False
 OBJECT_DETECTION_FUNCTION = scripts.object_detection.detect_ppe_26_01_2024.detect_and_update_frame
 SAVE_PATH = "local/saved_images" 
@@ -56,7 +64,7 @@ if(SAVE_PATH != None):
 
 while True:    
     camera_superviser.fetch_last_stream()
-    fetched_frames = camera_superviser.get_last_fetched_frames_simple()    
+    fetched_frames = camera_superviser.get_last_fetched_frames_detailed()# [ [camera name, frame, and timestamp], [camera name, frame, and timestamp], ...]
     
     # Create a nxn grid of frames
     if fetched_frames != None:
