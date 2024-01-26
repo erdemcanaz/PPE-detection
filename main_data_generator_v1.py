@@ -4,12 +4,13 @@ import cv2
 import numpy as np
 
 import scripts.IP_camera.fetch_stream
-import scripts.object_detection.detect_ppe
-import scripts.object_detection.detect_pose
+import scripts.object_detection.detect_ppe_26_01_2024
+#import scripts.object_detection.detect_ppe
+#import scripts.object_detection.detect_pose
 
-def create_grid(frames, grid_size=(3, 3)):
+def create_grid(frames, grid_size=(1, 1)):
     # Determine window size and cell size
-    window_height, window_width = 800, 1200  # You can adjust this size
+    window_height, window_width = 720, 1280  # You can adjust this size
     cell_height, cell_width = window_height // grid_size[0], window_width // grid_size[1]
 
     # Resize frames to fit cell size
@@ -31,17 +32,18 @@ with open('secret_camera_info.json') as file:
     cameras = json.load(file)
 
 camera_watchers = []
-for camera_id, camera_values in cameras["server_3"]["connected_cameras"].items():
-    camera_watcher_object = scripts.IP_camera.fetch_stream.IPCameraWatcher(**camera_values)
-    camera_watchers.append(camera_watcher_object)
+for camera_id, camera_values in cameras["server_21"]["connected_cameras"].items():
+    if camera_values["status"] == "active":
+        camera_watcher_object = scripts.IP_camera.fetch_stream.IPCameraWatcher(**camera_values)
+        camera_watchers.append(camera_watcher_object)
 
-NUMBER_OF_CAMERAS_TO_WATCH = 9 #you can save images only from the first 9 cameras, otherwise you need to change the save keys
-APPLY_OBJECT_DETECTION_MODEL = True
-OBJECT_DETECTION_FUNCTION = scripts.object_detection.detect_pose.detect_and_update_frame
+NUMBER_OF_CAMERAS_TO_WATCH = 18 #you can save images only from the first 9 cameras, otherwise you need to change the save keys
+APPLY_OBJECT_DETECTION_MODEL = False
+OBJECT_DETECTION_FUNCTION = scripts.object_detection.detect_ppe_26_01_2024.detect_and_update_frame
 SAVE_PATH = "local/saved_images" 
 
 camera_superviser = scripts.IP_camera.fetch_stream.IPcameraSupervisor(camera_watchers, MAX_ACTIVE_STREAMS=NUMBER_OF_CAMERAS_TO_WATCH, MIN_CAMERA_STATUS_DELAY_s= 10,  VERBOSE= True)
-camera_superviser.watch_random_cameras([   
+camera_superviser.watch_random_cameras([ 
 ])
 
 if(SAVE_PATH != None):
@@ -59,7 +61,6 @@ while True:
     # Create a nxn grid of frames
     if fetched_frames != None:
 
-
         original_frames = copy.deepcopy(fetched_frames)
 
         if APPLY_OBJECT_DETECTION_MODEL:
@@ -74,7 +75,6 @@ while True:
         cv2.imshow("Camera Grid", grid)        
         date = time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime())
        
-
         save_keys = [ord(str(i)) for i in range(1,10)]
         key = cv2.waitKey(1) & 0xFF  # Wait for a key press and mask with 0xFF
 
@@ -83,7 +83,7 @@ while True:
         elif key == ord('s'):
             continue   
         elif key == ord('r'):
-            camera_superviser.watch_random_cameras(["s3-camera 50"])
+            camera_superviser.watch_random_cameras([])
         elif key in save_keys:
             uuid_for_frame = uuid.uuid4()
             cv2.imwrite(f"{SAVE_PATH}/secret_data_{date}_{uuid_for_frame}.jpg", original_frames[key - save_keys[0]])

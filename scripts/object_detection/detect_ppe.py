@@ -8,9 +8,9 @@ model_path = "scripts/object_detection/models/ppe_detection_model.pt"
 #==============================
 
 yolo_object = YOLO(model_path)
-
+print(yolo_object.names)
                   
-def detect_and_update_frame(frame, confidence_threshold = 0.2):
+def detect_and_update_frame(frame, confidence_threshold = 0.75):
     global yolo_object
 
     classNames = ['Excavator', 'Gloves', 'Hardhat', 'Ladder', 'Mask', 'NO-hardhat',

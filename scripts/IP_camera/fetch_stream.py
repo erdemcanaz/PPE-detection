@@ -120,7 +120,7 @@ class IPcameraSupervisor:
                 self.inactive_camera_names.append(camera_name)
 
 class IPCameraWatcher: 
-    def __init__(self,  camera_name = None, camera_information = None, username = None, password = None, ip_address = None, stream_path = None, frame_width = None, frame_height = None, VERBOSE=False):
+    def __init__(self,  camera_name = None, camera_information = None, status = None, username = None, password = None, ip_address = None, stream_path = None, frame_width = None, frame_height = None, VERBOSE=False):
         self.camera_name = camera_name
         self.camera_info = camera_information
         self.username = username
