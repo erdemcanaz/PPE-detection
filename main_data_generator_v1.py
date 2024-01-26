@@ -1,4 +1,4 @@
-import json, pprint,time, random, math, copy, uuid, os
+import json, pprint,time, random, math, copy, uuid, os, datetime
 
 import cv2
 import numpy as np
@@ -17,8 +17,18 @@ def create_grid(frame_details, grid_size=(1, 1)):
     for frame_detail in frame_details:
         camera_name = frame_detail[0]
         fame = frame_detail[1]
+        timestamp = frame_detail[2]
+        time_obj = datetime.datetime.fromtimestamp(timestamp)
 
-        camera_name_added_frame = cv2.putText(fame, camera_name, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 4, cv2.LINE_AA)
+        # Extract hour, minute, and second
+        hour = time_obj.hour
+        minute = time_obj.minute
+        second = time_obj.second
+
+        timestamp_human_readable = "{:02d}:{:02d}:{:02d}".format(hour,minute,second)
+        camera_text = f"{camera_name} - {timestamp_human_readable}"
+
+        camera_name_added_frame = cv2.putText(fame, camera_text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 4, cv2.LINE_AA)
         frames.append(camera_name_added_frame)
 
     # Resize frames to fit cell size
@@ -40,17 +50,17 @@ with open('secret_camera_info.json') as file:
     cameras = json.load(file)
 
 camera_watchers = []
-for camera_id, camera_values in cameras["server_21"]["connected_cameras"].items():
+for camera_id, camera_values in cameras["server_22"]["connected_cameras"].items():
     if camera_values["status"] == "active":
         camera_watcher_object = scripts.IP_camera.fetch_stream.IPCameraWatcher(**camera_values)
         camera_watchers.append(camera_watcher_object)
 
-NUMBER_OF_CAMERAS_TO_WATCH = 9 #you can save images only from the first 9 cameras, otherwise you need to change the save keys
+NUMBER_OF_CAMERAS_TO_WATCH = 16 #you can save images only from the first 9 cameras, otherwise you need to change the save keys
 APPLY_OBJECT_DETECTION_MODEL = False
 OBJECT_DETECTION_FUNCTION = scripts.object_detection.detect_ppe_26_01_2024.detect_and_update_frame
 SAVE_PATH = "local/saved_images" 
 
-camera_superviser = scripts.IP_camera.fetch_stream.IPcameraSupervisor(camera_watchers, MAX_ACTIVE_STREAMS=NUMBER_OF_CAMERAS_TO_WATCH, MIN_CAMERA_STATUS_DELAY_s= 10,  VERBOSE= True)
+camera_superviser = scripts.IP_camera.fetch_stream.IPcameraSupervisor(camera_watchers, MAX_ACTIVE_STREAMS=NUMBER_OF_CAMERAS_TO_WATCH, MIN_CAMERA_STATUS_DELAY_s= 5,  VERBOSE= True)
 camera_superviser.watch_random_cameras([ 
 ])
 
