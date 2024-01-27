@@ -47,9 +47,15 @@ def detect_and_update_frame(frame, img_name_wo_extension = "", label_folder_path
             y1 = y1/frame_height
             x2 = x2/frame_width
             y2 = y2/frame_height
-            coordinates = [ x1, y1, x2, y2]
+
+            x_center = (x1 + x2) / 2
+            y_center = (y1 + y2) / 2
+            normalized_width = x2 - x1
+            normalized_height = y2 - y1
+
+            coordinates.append([x_center, y_center, normalized_width, normalized_height])
             print("box data",coordinates, frame_width, frame_height)
-            new_line = f"0 {x1} {y1} {x2} {y2}\n"
+            new_line = f"0 {x_center:.6f} {y_center:.6f} {normalized_width:.6f} {normalized_height:.6f}\n"
 
             # Append the line to a text file
             output_file = os.path.join(label_folder_path, f"{img_name_wo_extension}.txt")
@@ -134,24 +140,27 @@ def main_labell_all(image_folder_path, label_folder_path):
         img = cv2.imread(img_path)
 
         # Modify image
-        modified_img = detect_and_update_frame(img,  img_name_wo_extension = img_name, label_folder_path = label_folder_path)
-
-        # Display image
-        resize_image(modified_img, 1920, 1080)
-        cv2.imshow('Image Viewer', modified_img)
-
-        # Wait for key press
-        key = cv2.waitKey(0) & 0xFF
-
-        if key == ord('d'):
-            # Next image
-            current_index = (current_index + 1) % len(image_files)
-        elif key == ord('a'):
-            # Previous image
-            current_index = (current_index - 1) % len(image_files)
-        elif key == ord('q'):
-            # Quit the program
+        modified_img = detect_and_update_frame(img,  img_name_wo_extension = img_name, label_folder_path = label_folder_path, confidence_threshold = 0.2)
+        current_index = (current_index + 1) % len(image_files)
+        if(current_index == 0):
             break
+        
+        # # Display image
+        # resize_image(modified_img, 1920, 1080)
+        # cv2.imshow('Image Viewer', modified_img)
+
+        # # Wait for key press
+        # key = cv2.waitKey(0) & 0xFF
+
+        # if key == ord('d'):
+        #     # Next image
+        #     current_index = (current_index + 1) % len(image_files)
+        # elif key == ord('a'):
+        #     # Previous image
+        #     current_index = (current_index - 1) % len(image_files)
+        # elif key == ord('q'):
+        #     # Quit the program
+        #     break
 
     cv2.destroyAllWindows()
 
