@@ -2,7 +2,7 @@ import time, uuid, os
 import cv2
 
 video_path = input("Please enter the video path to be split into frames: ")
-save_path = input("Plese enter the folder path that frames will be saved")
+save_path = input("Plese enter the folder path that frames will be saved: ")
 
 def save_frame(video_path, save_path, skip_frames=30):
     """
