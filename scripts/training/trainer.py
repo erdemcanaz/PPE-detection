@@ -6,10 +6,10 @@ def main():
     torch.cuda.set_device(0) # Set to your desired GPU number
 
     # Option 1: Load a pretrained model
-    model = YOLO('yolov8n.pt')
+    model = YOLO('yolov8n.yaml')
 
     # Option 2: Build from YAML and transfer pretrained weights
-    model = YOLO('yolov8n.yaml').load('C:\\Users\\Levovo20x\\Documents\\GitHub\\PPE-detection\\scripts\\object_detection\\models\\ppe_26_01_2024.pt')
+    # model = YOLO('yolov8n.yaml').load('C:\\Users\\Levovo20x\\Documents\\GitHub\\PPE-detection\\scripts\\object_detection\\models\\ppe_26_01_2024.pt')
 
     #model = YOLO('yolov8n.yaml')
 
@@ -34,13 +34,13 @@ def main():
 
     model.train(
         data=yaml_file,
-        classes = [1,2,4],
-        epochs=10, 
+        classes = [0,1,4],
+        epochs=375, 
         save_dir=save_dir,
         project=save_dir,
         name=experiment,
         imgsz=640,
-        save_period = 10,
+        save_period = 25,
         batch = 8,
         plots = True
     )
