@@ -4,8 +4,6 @@ import sys
 
 #==============================
 source = "video"
-webcam_id = 0
-image_path = "images\\test.jpg"
 skip_frames = 60
 confidence_threshold_human = 0.15
 confidence_threshold_hardhat = 0.75
