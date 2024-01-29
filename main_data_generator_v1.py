@@ -4,9 +4,10 @@ import cv2
 import numpy as np
 
 import scripts.IP_camera.fetch_stream
-import scripts.object_detection.detect_ppe_26_01_2024
+#import scripts.object_detection.detect_ppe_26_01_2024
 #import scripts.object_detection.detect_ppe
 #import scripts.object_detection.detect_pose
+import scripts.object_detection.detect_ppe_MVP_29_01_2024
 
 def create_grid(frame_details, grid_size=(1, 1)):
     # Determine window size and cell size
@@ -67,14 +68,27 @@ for camera_id, camera_values in cameras["server_24"]["connected_cameras"].items(
         camera_watcher_object = scripts.IP_camera.fetch_stream.IPCameraWatcher(**camera_values)
         camera_watchers.append(camera_watcher_object)
 
-NUMBER_OF_CAMERAS_TO_WATCH = 9 #you can save images only from the first 9 cameras, otherwise you need to change the save keys
-APPLY_OBJECT_DETECTION_MODEL = False
-OBJECT_DETECTION_FUNCTION = scripts.object_detection.detect_ppe_26_01_2024.detect_and_update_frame
+NUMBER_OF_CAMERAS_TO_WATCH = 4 #you can save images only from the first 9 cameras, otherwise you need to change the save keys
+APPLY_OBJECT_DETECTION_MODEL = True
+OBJECT_DETECTION_FUNCTION = scripts.object_detection.detect_ppe_MVP_29_01_2024.detect_and_update_frame
 SAVE_PATH = "local/saved_images" 
 image_counter = 0
 DATASET_NAME = "ppe_dataset_v1"
 camera_superviser = scripts.IP_camera.fetch_stream.IPcameraSupervisor(camera_watchers, MAX_ACTIVE_STREAMS=NUMBER_OF_CAMERAS_TO_WATCH, MIN_CAMERA_STATUS_DELAY_s= 5,  VERBOSE= True)
-camera_superviser.watch_random_cameras(["s23-camera 47"])
+camera_superviser.watch_random_cameras([
+    "s23-camera 33",
+    "s23-camera 32",
+    #"s23-camera 23",
+
+    #"s23-camera 25",
+    #"s23-camera 16",
+    "s23-camera 15",
+    "s23-camera 14",
+
+    #"s23-camera 26",
+    #"s23-camera 27",
+    #"s23-camera 19"
+])
 
 if(SAVE_PATH != None):
     r = input(f"Do you want to save the images to path '{SAVE_PATH}'? (yes/no)")
@@ -97,8 +111,7 @@ while True:
         if APPLY_OBJECT_DETECTION_MODEL:
             for frame in fetched_frames:
                 if isinstance(frame[1],np.ndarray):
-                    OBJECT_DETECTION_FUNCTION(frame[1], confidence_threshold = 0.2)    
-                    print("za")
+                    OBJECT_DETECTION_FUNCTION(frame[1])    
                     
         grid_dimension =  math.ceil(math.sqrt(len(fetched_frames)))
         grid = create_grid(fetched_frames, grid_size=(grid_dimension, grid_dimension))
@@ -108,14 +121,26 @@ while True:
         date = time.strftime("%Y-%m-%d-%H_%M_%S", time.localtime())
        
         save_keys = [ord(str(i)) for i in range(1,10)]
-        key = cv2.waitKey() & 0xFF  # Wait for a key press and mask with 0xFF
+        key = cv2.waitKey(1) & 0xFF  # Wait for a key press and mask with 0xFF
 
         if key == ord('q'):  # Compare against the ASCII value of 'q'
             break
         elif key == ord('s'):
             continue   
         elif key == ord('r'):
-            camera_superviser.watch_random_cameras([])
+            camera_superviser.watch_random_cameras([
+                "s23-camera 33",
+                "s23-camera 32",
+                "s23-camera 23",
+
+                "s23-camera 25",
+                "s23-camera 16",
+                "s23-camera 15",
+
+                "s23-camera 26",
+                "s23-camera 27",
+                "s23-camera 19"
+            ])
         elif key in save_keys:
             uuid_for_frame = uuid.uuid4()
 

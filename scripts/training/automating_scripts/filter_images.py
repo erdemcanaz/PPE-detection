@@ -31,12 +31,21 @@ while True:
 
     # 's' key - copy and move to next
     if key == ord('s'):
-        shutil.copy2(image_path, os.path.join(filtered_image_dir, image_files[current_image_index]))
-        label_path = os.path.join(label_dir, image_files[current_image_index].split('.')[0] + '.txt')
-        shutil.copy2(label_path, os.path.join(filtered_label_dir, image_files[current_image_index].split('.')[0] + '.txt'))
-        print(f"Copied {image_files[current_image_index]} and its label")
-    
-    # 'd' key - move to next image
+        # Check if corresponding label file exists
+        label_file_name = image_files[current_image_index].split('.')[0] + '.txt'
+        label_path = os.path.join(label_dir, label_file_name)
+
+        if os.path.exists(label_path):
+            # Copy the label file
+            shutil.copy2(label_path, os.path.join(filtered_label_dir, label_file_name))
+            print(f"Copied label for {image_files[current_image_index]}")
+
+            # Copy the image file
+            shutil.copy2(image_path, os.path.join(filtered_image_dir, image_files[current_image_index]))
+            print(f"Copied {image_files[current_image_index]}")
+        else:
+            print(f"No label file found for {image_files[current_image_index]}. Image not copied.")
+        # 'd' key - move to next image
     if key == ord('d'):
         current_image_index = (current_image_index + 1) % len(image_files)
 
