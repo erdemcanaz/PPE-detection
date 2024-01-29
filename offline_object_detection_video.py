@@ -6,7 +6,7 @@ import sys
 source = "video"
 webcam_id = 0
 image_path = "images\\test.jpg"
-skip_frames = 1
+skip_frames = 60
 confidence_threshold_human = 0.15
 confidence_threshold_hardhat = 0.75
 image_ratio = 0.8 # 1 = full screen, 0.5 = half screen
@@ -16,8 +16,6 @@ video_path = input("Enter the path to your video: ")
 #==============================
 
 yolo_object = YOLO(model_path)
-
-
 
 def detect_from_video(video_path = None, skip_frames = 1):
     global yolo_object
@@ -45,21 +43,20 @@ def detect_from_video(video_path = None, skip_frames = 1):
                 class_name = yolo_object.names[cls]
                 label = f'{class_name} - {conf}'
 
-                if class_name == "human" and conf < confidence_threshold_human:
-                    continue
+                # if class_name == "human" and conf < confidence_threshold_human:
+                #     continue
             
-                if class_name == "hard_hat" and conf < confidence_threshold_hardhat:
-                    continue                    
+                # if class_name == "hard_hat" and conf < confidence_threshold_hardhat:
+                #     continue                    
                 
-                color = (0,255,0)
-                if class_name == "hard_hat":
-                    color = (0,0,255)
+                # color = (0,255,0)
+                # if class_name == "hard_hat":
+                #     
 
-                else:  
-                    # Apply blur to the ROI
-                    roi = frame[y1:y2, x1:x2]
-                    blurred_roi = cv2.GaussianBlur(roi, (25, 25), 0)
-                    frame[y1:y2, x1:x2] = blurred_roi
+                color = (0,0,255)
+                roi = frame[y1:y2, x1:x2]
+                blurred_roi = cv2.GaussianBlur(roi, (55, 55), 0)
+                frame[y1:y2, x1:x2] = blurred_roi
             
                 t_size = cv2.getTextSize(label, 0, fontScale=1, thickness=1)[0]
                 c2 = x1 + t_size[0], y1 - t_size[1] - 3

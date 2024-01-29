@@ -4,7 +4,7 @@ import cv2,math,time,os
 import sys
 
 #==============================
-model_path = "scripts/object_detection/models/yolov8n-pose.pt"
+model_path = "scripts/object_detection/models/yolov8m-pose.pt"
 #==============================
 
 yolo_object = YOLO(model_path)

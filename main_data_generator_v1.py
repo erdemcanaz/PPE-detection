@@ -7,7 +7,7 @@ import scripts.IP_camera.fetch_stream
 #import scripts.object_detection.detect_ppe_26_01_2024
 #import scripts.object_detection.detect_ppe
 #import scripts.object_detection.detect_pose
-import scripts.object_detection.detect_ppe_MVP_29_01_2024
+import scripts.object_detection.detect_hard_hat_29_01_2024
 
 def create_grid(frame_details, grid_size=(1, 1)):
     # Determine window size and cell size
@@ -70,7 +70,7 @@ for camera_id, camera_values in cameras["server_24"]["connected_cameras"].items(
 
 NUMBER_OF_CAMERAS_TO_WATCH = 9 #you can save images only from the first 9 cameras, otherwise you need to change the save keys
 APPLY_OBJECT_DETECTION_MODEL = False
-OBJECT_DETECTION_FUNCTION = scripts.object_detection.detect_ppe_MVP_29_01_2024.detect_and_update_frame
+OBJECT_DETECTION_FUNCTION = scripts.object_detection.detect_hard_hat_29_01_2024.detect_and_update_frame
 SAVE_PATH = "local/saved_images" 
 image_counter = 0
 DATASET_NAME = "ppe_dataset_v1"
