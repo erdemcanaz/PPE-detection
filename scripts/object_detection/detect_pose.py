@@ -3,40 +3,81 @@ import torch
 import cv2,math,time,os
 import sys
 
-#==============================
-model_path = "scripts/object_detection/models/yolov8m-pose.pt"
-#==============================
+class pose_detector():
+    def __init__(self, model_path):
+        self.model_path = model_path
+        self.yolo_object = YOLO(model_path)
+        
+        self.detection_results = {
+            "frame_shape": [0,0],
+            "speed_results": {
+                "preprocess": None,
+                "inference": None,
+                "postprocess": None
+            },
+            "predictions":[
+                {
+                    "bbox": [0,0,0,0], # Bounding box in the format [x1,y1,x2,y2]
+                    "keypoints": { # Keypoints are in the format [x,y,confidence]
+                        "left_eye": [0,0,0],
+                        "right_eye": [0,0,0],
+                        "nose": [0,0,0],
+                        "left_ear": [0,0,0],
+                        "right_ear": [0,0,0],
+                        "left_shoulder": [0,0,0],
+                        "right_shoulder": [0,0,0],
+                        "left_elbow": [0,0,0],
+                        "right_elbow": [0,0,0],
+                        "left_wrist": [0,0,0],
+                        "right_wrist": [0,0,0],
+                        "left_hip": [0,0,0],
+                        "right_hip": [0,0,0],
+                        "left_knee": [0,0,0],
+                        "right_knee": [0,0,0],
+                        "left_ankle": [0,0,0],
+                        "right_ankle": [0,0,0]
+                    }
+                }
+            ]
+        }
 
-yolo_object = YOLO(model_path)
+    def predict_frame(self, frame):
+        # Get predictions from the model
+        results = self.yolo_object(frame, task = "pose")[0]
 
-                  
-def detect_and_update_frame(frame, confidence_threshold = 0.2):
-    global yolo_object
+        self.detection_results['frame_shape'] = list(results.orig_shape) # Shape of the original image->  [height , width]
+        self.detection_results["speed_results"] = results.speed # {'preprocess': None, 'inference': None, 'postprocess': None}
 
-    results = yolo_object(frame, stream=True)
+        # Parse the predictions
+        
+        for i, result in enumerate(results):
+            print(f"Result {i}")
 
-    for r in results:
-        boxes = r.boxes
-        for box in boxes:
-            x1, y1, x2, y2 = box.xyxy[0]
-            x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
-            conf = math.ceil((box.conf[0] * 100)) / 100
-         
-            if(conf < confidence_threshold):
-                continue
+            print("Z",result)
 
-            
-            class_no = int(box.cls[0])   
-            class_name = "pose"
+            boxes = result.boxes  # Boxes object for bbox outputs     
+            box_cls = int(boxes.cls.cpu().numpy()[0])
+            box_conf = boxes.conf.cpu().numpy()[0]
+            box_xyxy = boxes.xyxy.cpu().numpy()[0]
 
-            label = f'{class_name} : {conf}'
-            t_size = cv2.getTextSize(label, 0, fontScale=1, thickness=1)[0]
-            c2 = x1 + t_size[0], y1 - t_size[1] - 3
+            print("ZB",box_cls)
+            print("ZC",box_conf)
+            print("ZD",box_xyxy)           
 
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0,255,0), 1)
-            cv2.rectangle(frame, (x1, y1), c2, (0,255,0), -1, cv2.LINE_AA)
+            keypoints = result.keypoints  # Keypoints object for pose outputs
 
-            cv2.putText(frame, label, (x1, y1), 0, 1, [0, 0, 0], thickness=1, lineType=cv2.LINE_AA)
 
-    return frame 
+        return results
+
+if __name__ == "__main__":
+    image_path = input("Enter the path to the image: ")
+    model_path = input("Enter the path to the model: ")
+    detector = pose_detector(model_path)
+
+    frame = cv2.imread(image_path)
+    results = detector.get_prediction_results(frame)
+
+
+
+
 
