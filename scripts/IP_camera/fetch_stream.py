@@ -133,7 +133,7 @@ class IPcameraSupervisor:
                 self.inactive_camera_names.append(camera_name)
 
 class IPCameraWatcher: 
-    def __init__(self,  camera_name = None, camera_information = None, status = None, username = None, password = None, ip_address = None, stream_path = None, frame_width = None, frame_height = None, VERBOSE=False):
+    def __init__(self, delay_between_frames = [0.25,3], camera_name = None, camera_information = None, status = None, username = None, password = None, ip_address = None, stream_path = None, frame_width = None, frame_height = None, VERBOSE=False):
         self.camera_name = camera_name
         self.camera_info = camera_information
         self.username = username
@@ -146,6 +146,7 @@ class IPCameraWatcher:
         self.latest_frame = np.ones((frame_height, frame_width, 3), dtype=np.uint8) * 255
         self.latest_frame_timestamp = 0
         self.running = False
+        self.delay_between_frames = delay_between_frames
 
     def __str__ (self):
         return f'IPCameraWatcher object: {self.camera_name} ({self.ip_address})'
@@ -160,18 +161,26 @@ class IPCameraWatcher:
         self.thread.start()
 
     def _watch_camera(self):
-        url = f'rtsp://{self.username}:{self.password}@{self.ip_address}/{self.stream_path}'  
+        url = f'rtsp://{self.username}:{self.password}@{self.ip_address}/{self.stream_path}'
         cap = cv2.VideoCapture(url)
 
-        # Attempt to set the buffer size to a specific number of frames
-        # Note: This may not work with all cameras and drivers.
         buffer_size_in_frames = 1
         cap.set(cv2.CAP_PROP_BUFFERSIZE, buffer_size_in_frames)
 
         while self.running:
-            ret, frame = cap.read()
+            # Use grab() to capture the frame
+            if not cap.grab():
+                break  # Break the loop if no frame is grabbed
+
+            # Introduce a delay
+            min_delay = self.delay_between_frames[0]
+            max_delay = self.delay_between_frames[1]
+            time.sleep(random.uniform(min_delay, max_delay))  # Wait for half a second
+
+            # Then retrieve the frame
+            ret, frame = cap.retrieve()
             if ret:
-                if self.VERBOSE:print(f'Got a frame from {self._get_formatted_url()}')
+                if self.VERBOSE: print(f'Got a frame from {self._get_formatted_url()}')
                 self.latest_frame = frame
                 self.latest_frame_timestamp = time.time()
             else:

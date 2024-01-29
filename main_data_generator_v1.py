@@ -68,8 +68,8 @@ for camera_id, camera_values in cameras["server_24"]["connected_cameras"].items(
         camera_watcher_object = scripts.IP_camera.fetch_stream.IPCameraWatcher(**camera_values)
         camera_watchers.append(camera_watcher_object)
 
-NUMBER_OF_CAMERAS_TO_WATCH = 4 #you can save images only from the first 9 cameras, otherwise you need to change the save keys
-APPLY_OBJECT_DETECTION_MODEL = True
+NUMBER_OF_CAMERAS_TO_WATCH = 9 #you can save images only from the first 9 cameras, otherwise you need to change the save keys
+APPLY_OBJECT_DETECTION_MODEL = False
 OBJECT_DETECTION_FUNCTION = scripts.object_detection.detect_ppe_MVP_29_01_2024.detect_and_update_frame
 SAVE_PATH = "local/saved_images" 
 image_counter = 0
