@@ -144,14 +144,15 @@ class pose_detector():
 
         for result in self.prediction_results["predictions"]:
             class_name = self.prediction_results["predictions"][0]["class_name"]
-            confidence = self.prediction_results["predictions"][0]["bbox_confidence"]
-         
-            confidence = 0.9
+            confidence = result["bbox_confidence"]
+            belly_distance = result["belly_distance_wrt_camera"]
+
             color_map = lambda x: (0, int(255 * (x)), int(255 * (1-x)) ) #BGR
             color = color_map(confidence)
 
             if result["bbox_confidence"] > confidence_threshold:
                 cv2.rectangle(frame, (int(result["bbox"][0]), int(result["bbox"][1])), (int(result["bbox"][2]), int(result["bbox"][3])), color, 2)
+                cv2.putText(frame, f"{class_name}: {belly_distance:.2f}m ", (int(result["bbox"][0]), int(result["bbox"][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
 
     def draw_keypoints_points(self, confidence_threshold = 0.25, DOT_SCALE_FACTOR = 1):
         """
@@ -298,12 +299,12 @@ class pose_detector():
             bounds = [(0, None), (0, None), (0, None), (0, None)]
 
             # Perform the optimizationx
-            result = minimize(minimizer_function, initial_guess, args=(rs_uv, ls_uv, rh_uv, lh_uv), method='L-BFGS-B', tol=tolerance, bounds=bounds)
-            if result.success == False:
+            optimization_result = minimize(minimizer_function, initial_guess, args=(rs_uv, ls_uv, rh_uv, lh_uv), method='L-BFGS-B', tol=tolerance, bounds=bounds)
+            if optimization_result.success == False:
                 raise Exception("Minimization failed")
             
             # Get the optimized parameters
-            a_rs, a_ls, a_rh, a_lh = result.x
+            a_rs, a_ls, a_rh, a_lh = optimization_result.x
 
             belly_coordinate_wrt_camera = (a_rs*rs_uv + a_ls*ls_uv) /2 
             belly_distance_wrt_camera = np.linalg.norm(belly_coordinate_wrt_camera)
@@ -311,6 +312,7 @@ class pose_detector():
             result["belly_coordinate_wrt_camera"] = list(belly_coordinate_wrt_camera) # [x,y,z] coordinates of the object wrt the camera
             result["belly_distance_wrt_camera"] = belly_distance_wrt_camera # distance between the camera and the object in meters
 
+            pprint.pprint(optimization_result.x)
             pprint.pprint(result["belly_coordinate_wrt_camera"])
             pprint.pprint(result["belly_distance_wrt_camera"])
             print("----")
@@ -321,17 +323,20 @@ if __name__ == "__main__":
     image_path = input("Enter the path to the image: ")
 
     # model_path = input("Enter the path to the model: ")
-    model_path = "C:\\Users\\Levovo20x\\Documents\\GitHub\\PPE-detection\\scripts\\object_detection\\models\\secret_yolov8x-pose.pt"
+    model_path = "C:\\Users\\Levovo20x\\Documents\\GitHub\\PPE-detection\\scripts\\object_detection\\models\\secret_yolov8n-pose.pt"
 
     detector = pose_detector(model_path)
 
     frame = cv2.imread(image_path) #1280, 1024
+
     detector.predict_frame(frame)
+    detector.approximate_prediction_distance(h_view_angle= 128, v_view_angle= 102)    
+
     detector.draw_bounding_boxes()
     detector.draw_keypoints_points(DOT_SCALE_FACTOR = 0.5)
     detector.draw_upper_body_lines()
     
-    detector.approximate_prediction_distance()
+   
     cv2.imshow("frame", frame)
     cv2.waitKey(0)
 
