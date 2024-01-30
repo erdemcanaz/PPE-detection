@@ -26,12 +26,14 @@ def detect_from_video(video_path = None, skip_frames = 1):
         if frame_counter % skip_frames !=0:
             continue
 
-        pose_detector.predict_frame(frame)
+        pose_detector.predict_frame(frame, h_angle= 105.5, v_angle= 57.5)
+
         pose_detector.approximate_prediction_distance(h_view_angle= 105.5, v_view_angle= 57.5)
+
         pose_detector.draw_all()
 
-        # Resize the frame while maintaining aspect ratio
-        width = 800  # desired width
+        #Resize the frame while maintaining aspect ratio
+        width = 1000  # desired width
         height = int(frame.shape[0] * width / frame.shape[1])  # calculate height based on aspect ratio
         frame = cv2.resize(frame, (width, height))
 
