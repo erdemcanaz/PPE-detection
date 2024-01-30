@@ -7,7 +7,7 @@ from scipy.optimize import minimize
 import numpy as np
 
 
-class pose_detector():
+class poseDetector():
     #TODO verbose=False
 
     KEYPOINT_NAMES = ["left_eye", "rigt_eye", "nose", "left_ear", "right_ear", "left_shoulder", "right_shoulder", "left_elbow" ,"right_elbow","left_wrist", "right_wrist", "left_hip", "right_hip", "left_knee", "right_knee", "left_ankle", "right_ankle"]
@@ -38,6 +38,7 @@ class pose_detector():
                     "bbox_confidence":0,
                     "bbox": [0,0,0,0], # Bounding box in the format [x1,y1,x2,y2]
                     "bbox_pixel_area": 0,
+                    "is_coordinated_wrt_camera": False, # True if the coordinates are wrt the camera, False if they are wrt the frame
                     "belly_coordinate_wrt_camera": [0,0,0], # [x,y,z] coordinates of the object wrt the camera
                     "belly_distance_wrt_camera": 0, # distance between the camera and the object in meters
                     "keypoints": { # Keypoints are in the format [x,y,confidence]
@@ -98,6 +99,7 @@ class pose_detector():
                 "bbox_confidence":box_conf,
                 "bbox": box_xyxy, # Bounding box in the format [x1,y1,x2,y2]
                 "bbox_pixel_area": bbox_pixel_area,
+                "is_coordinated_wrt_camera": False,
                 "belly_coordinate_wrt_camera": [0,0,0], # [x,y,z] coordinates of the object wrt the camera
                 "belly_distance_wrt_camera": 0, # distance between the camera and the object in meters
                 "keypoints": { # Keypoints are in the format [x,y,confidence]
@@ -126,7 +128,7 @@ class pose_detector():
             keypoints_xy = key_points.xy.cpu().numpy()[0]
             
             #KEYPOINT_NAMES = ["left_eye", "rigt_eye", "nose", "left_ear", "right_ear", "left_shoulder", "right_shoulder", "left_elbow" ,"right_elbow","left_wrist", "right_wrist", "left_hip", "right_hip", "left_knee", "right_knee", "left_ankle", "right_ankle"]
-            for keypoint_index, keypoint_name in enumerate(pose_detector.KEYPOINT_NAMES):
+            for keypoint_index, keypoint_name in enumerate(poseDetector.KEYPOINT_NAMES):
                 keypoint_conf = keypoint_confs[keypoint_index] 
                 keypoint_x = keypoints_xy[keypoint_index][0]
                 keypoint_y = keypoints_xy[keypoint_index][1]
@@ -152,7 +154,11 @@ class pose_detector():
 
             if result["bbox_confidence"] > confidence_threshold:
                 cv2.rectangle(frame, (int(result["bbox"][0]), int(result["bbox"][1])), (int(result["bbox"][2]), int(result["bbox"][3])), color, 2)
-                cv2.putText(frame, f"{class_name}: {belly_distance:.2f}m ", (int(result["bbox"][0]), int(result["bbox"][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
+                #TODO: ensure that distance is calculated
+                if result["is_coordinated_wrt_camera"]:
+                    cv2.putText(frame, f"{class_name}: {belly_distance:.2f}m ", (int(result["bbox"][0]), int(result["bbox"][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
+                else:
+                    cv2.putText(frame, f"{class_name}", (int(result["bbox"][0]), int(result["bbox"][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
 
     def draw_keypoints_points(self, confidence_threshold = 0.25, DOT_SCALE_FACTOR = 1):
         """
@@ -165,7 +171,7 @@ class pose_detector():
 
             dot_radius = math.ceil(DOT_SCALE_FACTOR*(DOT_MULTIPLIER*result["bbox_pixel_area"]))
 
-            for keypoint_name in pose_detector.KEYPOINT_NAMES:
+            for keypoint_name in poseDetector.KEYPOINT_NAMES:
                 keypoint = result["keypoints"][keypoint_name]
                 if keypoint[2] > confidence_threshold:
                     # Set the radius for the border (stroke)
@@ -185,7 +191,7 @@ class pose_detector():
 
         joints_to_be_connected = ["left_shoulder", "right_shoulder", "right_hip", "left_hip"]
         for result in self.prediction_results["predictions"]:
-            for keypoint_name in pose_detector.KEYPOINT_NAMES:
+            for keypoint_name in poseDetector.KEYPOINT_NAMES:
                 if keypoint_name not in joints_to_be_connected:
                     continue
 
@@ -194,7 +200,10 @@ class pose_detector():
                 for joint_name in joints_to_be_connected:
                     joint = result["keypoints"][joint_name]
 
-                    if keypoint[2] > confidence_threshold and joint[2] > confidence_threshold:
+                    check_1 = keypoint[0] > 0 and keypoint[1] > 0
+                    check_2 = joint[0] > 0 and joint[1] > 0
+
+                    if check_1 and check_2:
                         cv2.line(frame, (int(keypoint[0]), int(keypoint[1])), (int(joint[0]), int(joint[1])), (255, 255, 255), 2)
 
     def draw_all(self):
@@ -212,13 +221,18 @@ class pose_detector():
         frame_height = self.prediction_results["frame_shape"][0]
         frame_width = self.prediction_results["frame_shape"][1]
 
-        # Normalize pixel coordinates to range [-1, 1]
-        x_normalized = (x / frame_width) * 2 - 1
-        y_normalized = (y / frame_height) * 2 - 1
+        # Normalize pixel coordinates to range [-0.5, 0.5]
+        x_normalized = (x / frame_width)  - 0.5 #right is positive
+        y_normalized = (y / frame_height)  - 0.5 #down is positive
 
         # Calculate angles relative to the camera's field of view
-        angle_x = x_normalized * h_view_angle / 2
-        angle_y = y_normalized * v_view_angle / 2
+        angle_x = x_normalized * h_view_angle
+        angle_y = y_normalized * v_view_angle
+        
+        print("x_normalized", x_normalized)
+        print("angle_x", angle_x)
+        print("y_normalized", y_normalized)
+        print("angle_y", angle_y)
 
         # Convert angles to radians
         angle_x_rad = np.radians(angle_x)
@@ -226,18 +240,20 @@ class pose_detector():
 
         # Calculate direction vector
         # Assuming camera is pointing along the z-axis
+        ux = 1*math.cos(angle_y_rad)*math.sin(angle_x_rad)
+        uy = 1*math.sin(angle_y_rad)
+        uz = 1*math.cos(angle_y_rad)*math.cos(angle_x_rad)
+    
         direction_vector = np.array([
-            np.tan(angle_x_rad),  # X component
-            -np.tan(angle_y_rad), # Y component (negative due to pixel coordinates starting from top left)
-            1                     # Z component
+            ux, # X component
+            uy, # Y component (negative due to pixel coordinates starting from top left)
+            uz  # Z component
         ])
 
-        # Normalize the direction vector
-        direction_vector /= np.linalg.norm(direction_vector)
-
+        print("direction_vector", direction_vector)
         return direction_vector
 
-    def approximate_prediction_distance(self, h_view_angle = 105, v_view_angle = 60):
+    def approximate_prediction_distance(self, h_view_angle = 105.5, v_view_angle = 57.5):
         """
         Calculates the distances between the camera and each detected person.
         """
@@ -249,12 +265,34 @@ class pose_detector():
             left_shoulder = result["keypoints"]["left_shoulder"]
             right_hip = result["keypoints"]["right_hip"]
             left_hip = result["keypoints"]["left_hip"]
+
+            should_continue = False
+            for joint in [right_shoulder, left_shoulder, right_hip, left_hip]:
+                if joint[0] <= 0.01 or joint[1] <= 0.01:
+                    print(joint)
+                    result["belly_coordinate_wrt_camera"] = 0 # [x,y,z] coordinates of the object wrt the camera
+                    result["belly_distance_wrt_camera"] = [0,0,0] # distance between the camera and the object in meters
+                    result["is_coordinated_wrt_camera"] = False
+                    should_continue = True
+                    break
+            if should_continue:
+                continue
+                
+            print("right_shoulder", right_shoulder)
+            print("left_shoulder", left_shoulder)
+            print("right_hip", right_hip)
+            print("left_hip", left_hip)
             
             # Calculate the direction vectors for important keypoints
             rs_uv = self._calculate_direction_vector(right_shoulder[0], right_shoulder[1], h_view_angle, v_view_angle)
             ls_uv = self._calculate_direction_vector(left_shoulder[0], left_shoulder[1], h_view_angle, v_view_angle)
             rh_uv = self._calculate_direction_vector(right_hip[0], right_hip[1], h_view_angle, v_view_angle)
             lh_uv = self._calculate_direction_vector(left_hip[0], left_hip[1], h_view_angle, v_view_angle)
+
+            print("rs_uv", rs_uv)
+            print("ls_uv", ls_uv)
+            print("rh_uv", rh_uv)
+            print("lh_uv", lh_uv)
 
             def minimizer_function(a_variables, rs_uv, ls_uv, rh_uv, lh_uv)-> float:
                 """
@@ -284,10 +322,10 @@ class pose_detector():
                 d_ls_lh = np.linalg.norm(ls - lh) #distance between left shoulder and left hip
 
                 #error - right shoulder centered:
-                error_rs = math.pow(d_rs_ls - pose_detector.SHOULDER_TO_SHOULDER, 2) + math.pow(d_rs_rh - pose_detector.SHOULDER_TO_HIP, 2) + math.pow(d_rs_lh - pose_detector.SHOULDER_TO_COUNTER_HIP, 2)
+                error_rs = math.pow(d_rs_ls - poseDetector.SHOULDER_TO_SHOULDER, 2) + math.pow(d_rs_rh - poseDetector.SHOULDER_TO_HIP, 2) + math.pow(d_rs_lh - poseDetector.SHOULDER_TO_COUNTER_HIP, 2)
 
                 #error - left shoulder centered:
-                error_ls = math.pow(d_ls_rs - pose_detector.SHOULDER_TO_SHOULDER, 2) + math.pow(d_ls_rh - pose_detector.SHOULDER_TO_COUNTER_HIP, 2) + math.pow(d_ls_lh - pose_detector.SHOULDER_TO_HIP, 2)
+                error_ls = math.pow(d_ls_rs - poseDetector.SHOULDER_TO_SHOULDER, 2) + math.pow(d_ls_rh - poseDetector.SHOULDER_TO_COUNTER_HIP, 2) + math.pow(d_ls_lh - poseDetector.SHOULDER_TO_HIP, 2)
                
                 return max(error_rs, error_ls)
 
@@ -311,6 +349,7 @@ class pose_detector():
 
             result["belly_coordinate_wrt_camera"] = list(belly_coordinate_wrt_camera) # [x,y,z] coordinates of the object wrt the camera
             result["belly_distance_wrt_camera"] = belly_distance_wrt_camera # distance between the camera and the object in meters
+            result["is_coordinated_wrt_camera"] = True
 
             pprint.pprint(optimization_result.x)
             pprint.pprint(result["belly_coordinate_wrt_camera"])
@@ -325,7 +364,7 @@ if __name__ == "__main__":
     # model_path = input("Enter the path to the model: ")
     model_path = "C:\\Users\\Levovo20x\\Documents\\GitHub\\PPE-detection\\scripts\\object_detection\\models\\secret_yolov8n-pose.pt"
 
-    detector = pose_detector(model_path)
+    detector = poseDetector(model_path)
 
     frame = cv2.imread(image_path) #1280, 1024
 
