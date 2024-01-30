@@ -3,7 +3,10 @@ import torch
 import cv2,math,time,os
 import time, pprint
 
+
 class pose_detector():
+    #TODO verbose=False
+
     KEYPOINT_NAMES = ["left_eye", "rigt_eye", "nose", "left_ear", "right_ear", "left_shoulder", "right_shoulder", "left_elbow" ,"right_elbow","left_wrist", "right_wrist", "left_hip", "right_hip", "left_knee", "right_knee", "left_ankle", "right_ankle"]
 
     def __init__(self, model_path):
@@ -11,6 +14,7 @@ class pose_detector():
         self.yolo_object = YOLO(model_path)
         
         self.prediction_results = {
+            "frame":None, #The frame that was predicted
             "time_stamp":0, #time.time() value indicating when this prediction happend
             "frame_shape": [0,0],
             "speed_results": {
@@ -60,8 +64,8 @@ class pose_detector():
         predicts the pose of a single frame and returns the results in the format specified in self.prediction_results. Also store the results in the class object.
         """
         results = self.yolo_object(frame, task = "pose")[0]
-        #TODO verbose=False
-
+        
+        self.prediction_results['frame'] = frame
         self.prediction_results['frame_shape'] = list(results.orig_shape) # Shape of the original image->  [height , width]
         self.prediction_results["speed_results"] = results.speed # {'preprocess': None, 'inference': None, 'postprocess': None}
         self.prediction_results["time_stamp"] = time.time()
@@ -119,17 +123,90 @@ class pose_detector():
 
         return self.prediction_results
 
-    def draw_keypoints(self, frame):
-        pass #TODO
+    def draw_bounding_boxes(self, confidence_threshold = 0.25):
+        """
+        Draws the bounding boxes predicted related to the last frame. Esnure that 'predict_frame' has been called before this function.
+        """
+        frame = self.prediction_results["frame"]
+
+        for result in self.prediction_results["predictions"]:
+            class_name = self.prediction_results["predictions"][0]["class_name"]
+            confidence = self.prediction_results["predictions"][0]["bbox_confidence"]
+         
+            confidence = 0.9
+            color_map = lambda x: (0, int(255 * (x)), int(255 * (1-x)) ) #BGR
+            color = color_map(confidence)
+
+            if result["bbox_confidence"] > confidence_threshold:
+                cv2.rectangle(frame, (int(result["bbox"][0]), int(result["bbox"][1])), (int(result["bbox"][2]), int(result["bbox"][3])), color, 2)
+
+    def draw_keypoints_points(self, confidence_threshold = 0.25, DOT_SCALE_FACTOR = 1):
+        """
+        Draws the keypoints predicted related to the last frame. Esnure that 'predict_frame' has been called before this function.
+        """
+        DOT_MULTIPLIER = 0.00005
+        frame = self.prediction_results["frame"]
+
+        for result in self.prediction_results["predictions"]:
+
+            dot_radius = math.ceil(DOT_SCALE_FACTOR*(DOT_MULTIPLIER*result["bbox_pixel_area"]))
+
+            for keypoint_name in pose_detector.KEYPOINT_NAMES:
+                keypoint = result["keypoints"][keypoint_name]
+                if keypoint[2] > confidence_threshold:
+                    # Set the radius for the border (stroke)
+                    border_radius = dot_radius + 1  # Increase the radius slightly for the border
+
+                    # Draw the black border
+                    cv2.circle(frame, (int(keypoint[0]), int(keypoint[1])), border_radius, (0, 0, 0), -1)
+
+                    # Draw the white filled circle
+                    cv2.circle(frame, (int(keypoint[0]), int(keypoint[1])), dot_radius, (255, 255, 255), -1)
+
+    def draw_upper_body_lines(self, confidence_threshold = 0.1):
+        """
+        Draws the upper body lines related to the last frame. Esnure that 'predict_frame' has been called before this function.
+        """
+        frame = self.prediction_results["frame"]
+
+        joints_to_be_connected = ["left_shoulder", "right_shoulder", "right_hip", "left_hip"]
+        for result in self.prediction_results["predictions"]:
+            for keypoint_name in pose_detector.KEYPOINT_NAMES:
+                if keypoint_name not in joints_to_be_connected:
+                    continue
+
+                keypoint = result["keypoints"][keypoint_name]
+
+                for joint_name in joints_to_be_connected:
+                    joint = result["keypoints"][joint_name]
+
+                    if keypoint[2] > confidence_threshold and joint[2] > confidence_threshold:
+                        cv2.line(frame, (int(keypoint[0]), int(keypoint[1])), (int(joint[0]), int(joint[1])), (255, 255, 255), 2)
+
+    def draw_all(self):
+        """
+        Draws the bounding boxes, keypoints and upper body lines related to the last frame. Esnure that 'predict_frame' has been called before this function.
+        """
+        self.draw_bounding_boxes()
+        self.draw_keypoints_points()
+        self.draw_upper_body_lines()
 
 if __name__ == "__main__":
     image_path = input("Enter the path to the image: ")
-    model_path = input("Enter the path to the model: ")
+
+    # model_path = input("Enter the path to the model: ")
+    model_path = "C:\\Users\\Levovo20x\\Documents\\GitHub\\PPE-detection\\scripts\\object_detection\\models\\secret_yolov8x-pose.pt"
+
     detector = pose_detector(model_path)
 
     frame = cv2.imread(image_path)
-    results = detector.predict_frame(frame)
-    pprint.pprint(results)
+    detector.predict_frame(frame)
+    detector.draw_bounding_boxes()
+    detector.draw_keypoints_points(DOT_SCALE_FACTOR = 0.5)
+    detector.draw_upper_body_lines()
+
+    cv2.imshow("frame", frame)
+    cv2.waitKey(0)
 
 
 
