@@ -3,12 +3,11 @@ from scripts.object_detection.detect_pose import poseDetector as poseDetector
 import cv2,math,time,os
 import sys
 
-
 #==============================
 model_path = input("Enter the path to your model: ")
 video_path = input("Enter the path to your video: ")
 
-skip_frames = 1
+skip_frames = 30
 #==============================
 
 pose_detector = poseDetector(model_path)
@@ -27,10 +26,12 @@ def detect_from_video(video_path = None, skip_frames = 1):
             continue
 
         pose_detector.predict_frame(frame, h_angle= 105.5, v_angle= 57.5)
+        pose_detector.approximate_prediction_distance(box_condifence_threshold=0.5)
 
-        pose_detector.approximate_prediction_distance(h_view_angle= 105.5, v_view_angle= 57.5)
-
-        pose_detector.draw_all()
+        pose_detector.draw_bounding_boxes(confidence_threshold=0.25)
+        pose_detector.draw_keypoints_points()
+        pose_detector.draw_upper_body_lines()
+        pose_detector.add_grid()
 
         #Resize the frame while maintaining aspect ratio
         width = 1000  # desired width

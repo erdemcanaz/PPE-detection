@@ -144,7 +144,7 @@ class poseDetector():
 
         return self.prediction_results
 
-    def draw_bounding_boxes(self, confidence_threshold = 0.25):
+    def draw_bounding_boxes(self, confidence_threshold = 0.25, add_blur = True, blur_kernel_size = 15):
         """
         Draws the bounding boxes predicted related to the last frame. Esnure that 'predict_frame' has been called before this function.
         """
@@ -154,15 +154,25 @@ class poseDetector():
             class_name = self.prediction_results["predictions"][0]["class_name"]
             confidence = result["bbox_confidence"]
             belly_distance = result["belly_distance_wrt_camera"]
+            belly_vector = result["belly_coordinate_wrt_camera"]
 
             color_map = lambda x: (0, int(255 * (x)), int(255 * (1-x)) ) #BGR
             color = color_map(confidence)
 
             if result["bbox_confidence"] > confidence_threshold:
-                cv2.rectangle(frame, (int(result["bbox"][0]), int(result["bbox"][1])), (int(result["bbox"][2]), int(result["bbox"][3])), color, 2)
-                #TODO: ensure that distance is calculated
+                x1, y1, x2, y2 = result["bbox"]
+                x1 = int(x1)
+                y1 = int(y1)
+                x2 = int(x2)
+                y2 = int(y2)
+                
+                cv2.rectangle(frame, (x1,y1), (x2,y2), color, 2)
+                roi = frame[y1:y2, x1:x2]
+                blurred_roi = cv2.GaussianBlur(roi, (35, 35), 0)
+                frame[y1:y2, x1:x2] = blurred_roi
+
                 if result["is_coordinated_wrt_camera"]:
-                    cv2.putText(frame, f"{class_name}: {belly_distance:.2f}m ", (int(result["bbox"][0]), int(result["bbox"][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
+                    cv2.putText(frame, f"{belly_distance:.1f}m : ({belly_vector[0]:.1f}, {belly_vector[1]:.1f}, {belly_vector[2]:.1f})", (int(result["bbox"][0]), int(result["bbox"][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
                 else:
                     cv2.putText(frame, f"{class_name}", (int(result["bbox"][0]), int(result["bbox"][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
 
@@ -240,12 +250,15 @@ class poseDetector():
         self.draw_upper_body_lines()
         self.add_grid()
 
-    def approximate_prediction_distance(self, h_view_angle = 105.5, v_view_angle = 57.5):
+    def approximate_prediction_distance(self, box_condifence_threshold = 0.25):
         """
         Calculates the distances between the camera and each detected person. if shoulders and hips are detected
         """
         for result in self.prediction_results["predictions"]:
             # Get the bounding box coordinates
+            box_confidence = result["bbox_confidence"]
+            if box_confidence < box_condifence_threshold:
+                continue
 
             rs_data = result["keypoints"]["right_shoulder"]
             ls_data = result["keypoints"]["left_shoulder"]
@@ -288,7 +301,7 @@ class poseDetector():
             #optimize the triangle
             tolerance = 1e-6
             bounds = [(0, 25), (0, 25), (0, 25), (0, 25)] #
-            initial_guess = [1,1,1,1] 
+            initial_guess = [5,5,5,5] 
             unit_vectors = [rs_uv, ls_uv, rh_uv, lh_uv]
             #NOTE: never remove comma after unit_vectors. Othewise it will be interpreted as a tuple
             minimizer_result = minimize(minimizer_function, initial_guess, args=( unit_vectors, ), method='L-BFGS-B', tol=tolerance, bounds = bounds)
