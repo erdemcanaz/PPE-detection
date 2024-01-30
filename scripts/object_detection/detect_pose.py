@@ -259,20 +259,63 @@ class poseDetector():
             rh_uv = f_get_unit_vector(rh_data[3], rh_data[4])
             lh_uv = f_get_unit_vector(lh_data[3], lh_data[4])
 
-            unknowns = [0,0,0,0]
-            unit_vectors = [rs_uv, ls_uv, rh_uv, lh_uv]
-            def minimizer_function(unknowns, rs_uv, ls_uv, rh_uv, lh_uv)-> float:
+       
+            def minimizer_function(unknowns, unit_vectors)-> float:
                 k_rs,k_ls,k_rh, k_lh = unknowns
                 u_rs, u_ls, u_rh, u_lh = unit_vectors
 
                 f_scale_vector = lambda vector, scale: [vector[0]*scale, vector[1]*scale, vector[2]*scale]
+                v_rs = f_scale_vector(u_rs, k_rs)
+                v_ls = f_scale_vector(u_ls, k_ls)
+                v_rh = f_scale_vector(u_rh, k_rh)
+                v_lh = f_scale_vector(u_lh, k_lh)
 
-                pass
 
+                f_distance_between_vectors = lambda v1, v2: math.sqrt((v1[0]-v2[0])**2 + (v1[1]-v2[1])**2 + (v1[2]-v2[2])**2)
+                d_rs_ls = f_distance_between_vectors(v_rs, v_ls)
+                d_rs_lh = f_distance_between_vectors(v_rs, v_lh)
+                d_rs_rh = f_distance_between_vectors(v_rs, v_rh)
+                d_ls_lh = f_distance_between_vectors(v_ls, v_lh)
+                d_ls_rh = f_distance_between_vectors(v_ls, v_rh)
+                
+                #rs,ls,rh triangle error
+                error_1 =  (d_rs_ls - poseDetector.SHOULDER_TO_SHOULDER)**2 + (d_rs_rh - poseDetector.SHOULDER_TO_HIP)**2 + (d_ls_rh - poseDetector.SHOULDER_TO_COUNTER_HIP)**2
+                #rs,ls,lh triangle error
+                error_2 = (d_rs_ls - poseDetector.SHOULDER_TO_SHOULDER)**2 + (d_ls_lh - poseDetector.SHOULDER_TO_HIP)**2 + (d_rs_lh - poseDetector.SHOULDER_TO_COUNTER_HIP)**2
 
-
-            continue
+                return (error_1 + error_2)
             
+            #optimize the triangle
+            tolerance = 1e-6
+            bounds = [(0, 25), (0, 25), (0, 25), (0, 25)] #
+            initial_guess = [1,1,1,1] 
+            unit_vectors = [rs_uv, ls_uv, rh_uv, lh_uv]
+            #NOTE: never remove comma after unit_vectors. Othewise it will be interpreted as a tuple
+            minimizer_result = minimize(minimizer_function, initial_guess, args=( unit_vectors, ), method='L-BFGS-B', tol=tolerance, bounds = bounds)
+            
+            if minimizer_result.success == True:
+            
+                # k_rs, k_ls, k_rh, k_lh = unknowns
+                scalars = minimizer_result.x
+                v_rs = [rs_uv[0]*scalars[0], rs_uv[1]*scalars[0], rs_uv[2]*scalars[0]]
+                v_ls = [ls_uv[0]*scalars[1], ls_uv[1]*scalars[1], ls_uv[2]*scalars[1]]
+                v_rh = [rh_uv[0]*scalars[2], rh_uv[1]*scalars[2], rh_uv[2]*scalars[2]]
+                v_lh = [lh_uv[0]*scalars[3], lh_uv[1]*scalars[3], lh_uv[2]*scalars[3]]
+
+                v_belly = [(v_rs[0]+v_lh[0])/2, (v_rs[1]+v_lh[1])/2, (v_rs[2]+v_lh[2])/2]
+                d_belly = math.sqrt(v_belly[0]**2 + v_belly[1]**2 + v_belly[2]**2)
+
+                result["belly_coordinate_wrt_camera"] = v_belly
+                result["belly_distance_wrt_camera"] = d_belly
+                result["is_coordinated_wrt_camera"] = True
+
+                print("scalars", scalars)
+                print("v_belly", v_belly)
+                print("d_belly", d_belly)           
+
+           
+
+
         
 
     

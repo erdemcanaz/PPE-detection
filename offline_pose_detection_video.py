@@ -8,7 +8,7 @@ import sys
 model_path = input("Enter the path to your model: ")
 video_path = input("Enter the path to your video: ")
 
-skip_frames = 150
+skip_frames = 1
 #==============================
 
 pose_detector = poseDetector(model_path)
@@ -41,7 +41,7 @@ def detect_from_video(video_path = None, skip_frames = 1):
         cv2.imshow('video', frame)
 
         # Break the loop if 'q' key is pressed
-        if cv2.waitKey() & 0xFF == ord('q'):
+        if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
     cap.release()
