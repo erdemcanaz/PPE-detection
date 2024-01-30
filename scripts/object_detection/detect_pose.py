@@ -3,13 +3,22 @@ import torch
 import cv2,math,time,os
 import time, pprint
 
+from scipy.optimize import minimize
+import numpy as np
+
 
 class pose_detector():
     #TODO verbose=False
 
     KEYPOINT_NAMES = ["left_eye", "rigt_eye", "nose", "left_ear", "right_ear", "left_shoulder", "right_shoulder", "left_elbow" ,"right_elbow","left_wrist", "right_wrist", "left_hip", "right_hip", "left_knee", "right_knee", "left_ankle", "right_ankle"]
+    
+    #approximate distances between the keypoints of a person in meters
+    SHOULDER_TO_SHOULDER = 0.36 
+    SHOULDER_TO_HIP = 0.48 
+    SHOULDER_TO_COUNTER_HIP = 0.53  
+    SHOULDER_TO_ELBOW = 0.26
 
-    def __init__(self, model_path):
+    def __init__(self, model_path = "C:\\Users\\Levovo20x\\Documents\\GitHub\\PPE-detection\\scripts\\object_detection\\models\\secret_yolov8x-pose-p6.pt" ):
         self.model_path = model_path
         self.yolo_object = YOLO(model_path)
         
@@ -29,6 +38,8 @@ class pose_detector():
                     "bbox_confidence":0,
                     "bbox": [0,0,0,0], # Bounding box in the format [x1,y1,x2,y2]
                     "bbox_pixel_area": 0,
+                    "belly_coordinate_wrt_camera": [0,0,0], # [x,y,z] coordinates of the object wrt the camera
+                    "belly_distance_wrt_camera": 0, # distance between the camera and the object in meters
                     "keypoints": { # Keypoints are in the format [x,y,confidence]
                         "left_eye": [0,0,0],
                         "right_eye": [0,0,0],
@@ -87,6 +98,8 @@ class pose_detector():
                 "bbox_confidence":box_conf,
                 "bbox": box_xyxy, # Bounding box in the format [x1,y1,x2,y2]
                 "bbox_pixel_area": bbox_pixel_area,
+                "belly_coordinate_wrt_camera": [0,0,0], # [x,y,z] coordinates of the object wrt the camera
+                "belly_distance_wrt_camera": 0, # distance between the camera and the object in meters
                 "keypoints": { # Keypoints are in the format [x,y,confidence]
                         "left_eye": [0,0,0],
                         "right_eye": [0,0,0],
@@ -191,6 +204,119 @@ class pose_detector():
         self.draw_keypoints_points()
         self.draw_upper_body_lines()
 
+    def _calculate_direction_vector(self, x, y, h_view_angle, v_view_angle):
+        """
+        Calculates the direction vector given the x, y coordinates of the point and the horizontal and vertical angles of the camera.
+        """
+        frame_height = self.prediction_results["frame_shape"][0]
+        frame_width = self.prediction_results["frame_shape"][1]
+
+        # Normalize pixel coordinates to range [-1, 1]
+        x_normalized = (x / frame_width) * 2 - 1
+        y_normalized = (y / frame_height) * 2 - 1
+
+        # Calculate angles relative to the camera's field of view
+        angle_x = x_normalized * h_view_angle / 2
+        angle_y = y_normalized * v_view_angle / 2
+
+        # Convert angles to radians
+        angle_x_rad = np.radians(angle_x)
+        angle_y_rad = np.radians(angle_y)
+
+        # Calculate direction vector
+        # Assuming camera is pointing along the z-axis
+        direction_vector = np.array([
+            np.tan(angle_x_rad),  # X component
+            -np.tan(angle_y_rad), # Y component (negative due to pixel coordinates starting from top left)
+            1                     # Z component
+        ])
+
+        # Normalize the direction vector
+        direction_vector /= np.linalg.norm(direction_vector)
+
+        return direction_vector
+
+    def approximate_prediction_distance(self, h_view_angle = 105, v_view_angle = 60):
+        """
+        Calculates the distances between the camera and each detected person.
+        """
+
+        for result in self.prediction_results["predictions"]:
+            # Get the bounding box coordinates
+
+            right_shoulder = result["keypoints"]["right_shoulder"]
+            left_shoulder = result["keypoints"]["left_shoulder"]
+            right_hip = result["keypoints"]["right_hip"]
+            left_hip = result["keypoints"]["left_hip"]
+            
+            # Calculate the direction vectors for important keypoints
+            rs_uv = self._calculate_direction_vector(right_shoulder[0], right_shoulder[1], h_view_angle, v_view_angle)
+            ls_uv = self._calculate_direction_vector(left_shoulder[0], left_shoulder[1], h_view_angle, v_view_angle)
+            rh_uv = self._calculate_direction_vector(right_hip[0], right_hip[1], h_view_angle, v_view_angle)
+            lh_uv = self._calculate_direction_vector(left_hip[0], left_hip[1], h_view_angle, v_view_angle)
+
+            def minimizer_function(a_variables, rs_uv, ls_uv, rh_uv, lh_uv)-> float:
+                """
+            
+                Function to be minimized to get the best approximation of the distance
+
+                a_rs, a_ls, a_rh, a_lh -> are the variables to be optimized in the correct order
+                xx_uv  -> is the direction vector of the xx keypoint
+                
+                """
+                a_rs = a_variables[0]
+                a_ls = a_variables[1]
+                a_rh = a_variables[2]
+                a_lh = a_variables[3]
+
+                rs = a_rs * rs_uv
+                ls = a_ls * ls_uv
+                rh = a_rh * rh_uv
+                lh = a_lh * lh_uv
+
+                d_rs_ls = np.linalg.norm(rs - ls) #distance between right and left shoulder, same as d_ls_rs
+                d_rs_rh = np.linalg.norm(rs - rh) #distance between right shoulder and right hip
+                d_rs_lh = np.linalg.norm(rs - lh) #distance between right shoulder and left hip
+
+                d_ls_rs = np.linalg.norm(rh - lh) #distance between left and right shoulder, same as d_rs_ls
+                d_ls_rh = np.linalg.norm(ls - rh) #distance between left shoulder and right hip
+                d_ls_lh = np.linalg.norm(ls - lh) #distance between left shoulder and left hip
+
+                #error - right shoulder centered:
+                error_rs = math.pow(d_rs_ls - pose_detector.SHOULDER_TO_SHOULDER, 2) + math.pow(d_rs_rh - pose_detector.SHOULDER_TO_HIP, 2) + math.pow(d_rs_lh - pose_detector.SHOULDER_TO_COUNTER_HIP, 2)
+
+                #error - left shoulder centered:
+                error_ls = math.pow(d_ls_rs - pose_detector.SHOULDER_TO_SHOULDER, 2) + math.pow(d_ls_rh - pose_detector.SHOULDER_TO_COUNTER_HIP, 2) + math.pow(d_ls_lh - pose_detector.SHOULDER_TO_HIP, 2)
+               
+                return max(error_rs, error_ls)
+
+            # Initial guess for the parameters
+            tolerance = 10**(-6) # 1cm
+            initial_guess = [1, 1, 1, 1]
+
+            # Define the bounds for each variable - ensuring they are positive
+            bounds = [(0, None), (0, None), (0, None), (0, None)]
+
+            # Perform the optimizationx
+            result = minimize(minimizer_function, initial_guess, args=(rs_uv, ls_uv, rh_uv, lh_uv), method='L-BFGS-B', tol=tolerance, bounds=bounds)
+            if result.success == False:
+                raise Exception("Minimization failed")
+            
+            # Get the optimized parameters
+            a_rs, a_ls, a_rh, a_lh = result.x
+
+            belly_coordinate_wrt_camera = (a_rs*rs_uv + a_ls*ls_uv) /2 
+            belly_distance_wrt_camera = np.linalg.norm(belly_coordinate_wrt_camera)
+
+            result["belly_coordinate_wrt_camera"] = list(belly_coordinate_wrt_camera) # [x,y,z] coordinates of the object wrt the camera
+            result["belly_distance_wrt_camera"] = belly_distance_wrt_camera # distance between the camera and the object in meters
+
+            pprint.pprint(result["belly_coordinate_wrt_camera"])
+            pprint.pprint(result["belly_distance_wrt_camera"])
+            print("----")
+
+    
+
 if __name__ == "__main__":
     image_path = input("Enter the path to the image: ")
 
@@ -199,12 +325,13 @@ if __name__ == "__main__":
 
     detector = pose_detector(model_path)
 
-    frame = cv2.imread(image_path)
+    frame = cv2.imread(image_path) #1280, 1024
     detector.predict_frame(frame)
     detector.draw_bounding_boxes()
     detector.draw_keypoints_points(DOT_SCALE_FACTOR = 0.5)
     detector.draw_upper_body_lines()
-
+    
+    detector.approximate_prediction_distance()
     cv2.imshow("frame", frame)
     cv2.waitKey(0)
 
