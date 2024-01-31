@@ -4,16 +4,16 @@ import cv2,math,time,os
 import sys
 
 #==============================
-model_path = "C:/Users/Levovo20x/Documents/GitHub/PPE-detection/scripts/object_detection/models/ppe_MVP_29_01_2024.pt"
+model_path = "C:/Users/Levovo20x/Documents/GitHub/PPE-detection/scripts/object_detection/models/secret_ppe_MVP_29_01_2024.pt"
 #==============================
 
-yolo_object = YOLO(model_path)
-print(yolo_object.names)
+yolo_object_hardhat = YOLO(model_path)
+print(yolo_object_hardhat.names)
 
 def detect_and_update_frame(frame, conf_human = 0.2, conf_hardhat = 0.75):
-    global yolo_object
+    global yolo_object_hardhat
     classNames = ['human', 'hard_hat', 'no_hard_hat', 'safety_vest', 'forklift', 'transpalet']
-    results = yolo_object(frame, stream=True)
+    results = yolo_object_hardhat(frame, stream=True)
 
     for r in results:
         boxes = r.boxes

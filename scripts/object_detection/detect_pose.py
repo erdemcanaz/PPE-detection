@@ -142,117 +142,12 @@ class poseDetector():
 
             self.prediction_results["predictions"].append(result_detection_dict)
 
-        return self.prediction_results
-
-    def draw_bounding_boxes(self, confidence_threshold = 0.25, add_blur = True, blur_kernel_size = 15):
-        """
-        Draws the bounding boxes predicted related to the last frame. Esnure that 'predict_frame' has been called before this function.
-        """
-        frame = self.prediction_results["frame"]
-
-        for result in self.prediction_results["predictions"]:
-            class_name = self.prediction_results["predictions"][0]["class_name"]
-            confidence = result["bbox_confidence"]
-            belly_distance = result["belly_distance_wrt_camera"]
-            belly_vector = result["belly_coordinate_wrt_camera"]
-
-            color_map = lambda x: (0, int(255 * (x)), int(255 * (1-x)) ) #BGR
-            color = color_map(confidence)
-
-            if result["bbox_confidence"] > confidence_threshold:
-                x1, y1, x2, y2 = result["bbox"]
-                x1 = int(x1)
-                y1 = int(y1)
-                x2 = int(x2)
-                y2 = int(y2)
-                
-                cv2.rectangle(frame, (x1,y1), (x2,y2), color, 2)
-                roi = frame[y1:y2, x1:x2]
-                blurred_roi = cv2.GaussianBlur(roi, (35, 35), 0)
-                frame[y1:y2, x1:x2] = blurred_roi
-
-                if result["is_coordinated_wrt_camera"]:
-                    cv2.putText(frame, f"{belly_distance:.1f}m : ({belly_vector[0]:.1f}, {belly_vector[1]:.1f}, {belly_vector[2]:.1f})", (int(result["bbox"][0]), int(result["bbox"][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
-                else:
-                    cv2.putText(frame, f"{class_name}", (int(result["bbox"][0]), int(result["bbox"][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
-
-    def draw_keypoints_points(self, confidence_threshold = 0.25, DOT_SCALE_FACTOR = 1):
-        """
-        Draws the keypoints predicted related to the last frame. Esnure that 'predict_frame' has been called before this function.
-        """
-        DOT_MULTIPLIER = 0.00005
-        frame = self.prediction_results["frame"]
-
-        for result in self.prediction_results["predictions"]:
-
-            dot_radius = math.ceil(DOT_SCALE_FACTOR*(DOT_MULTIPLIER*result["bbox_pixel_area"]))
-
-            for keypoint_name in poseDetector.KEYPOINT_NAMES:
-                keypoint = result["keypoints"][keypoint_name]
-                if keypoint[2] > confidence_threshold:
-                    # Set the radius for the border (stroke)
-                    border_radius = dot_radius + 1  # Increase the radius slightly for the border
-
-                    # Draw the black border
-                    cv2.circle(frame, (int(keypoint[0]), int(keypoint[1])), border_radius, (0, 0, 0), -1)
-
-                    # Draw the white filled circle
-                    cv2.circle(frame, (int(keypoint[0]), int(keypoint[1])), dot_radius, (255, 255, 255), -1)
-
-    def draw_upper_body_lines(self, confidence_threshold = 0.1):
-        """
-        Draws the upper body lines related to the last frame. Esnure that 'predict_frame' has been called before this function.
-        """
-        frame = self.prediction_results["frame"]
-
-        joints_to_be_connected = ["left_shoulder", "right_shoulder", "right_hip", "left_hip"]
-        for result in self.prediction_results["predictions"]:
-            for keypoint_name in poseDetector.KEYPOINT_NAMES:
-                if keypoint_name not in joints_to_be_connected:
-                    continue
-
-                keypoint = result["keypoints"][keypoint_name]
-
-                for joint_name in joints_to_be_connected:
-                    joint = result["keypoints"][joint_name]
-
-                    check_1 = keypoint[0] > 0 and keypoint[1] > 0
-                    check_2 = joint[0] > 0 and joint[1] > 0
-
-                    if check_1 and check_2:
-                        cv2.line(frame, (int(keypoint[0]), int(keypoint[1])), (int(joint[0]), int(joint[1])), (255, 255, 255), 2)
-
-    def add_grid(self, row_count = 10, column_count = 10):
-        """
-        Draws a grid on the image
-        """
-        frame = self.prediction_results["frame"]
-        frame_height = self.prediction_results['frame_shape'][0]
-        frame_width = self.prediction_results['frame_shape'][1]
-
-        for i in range(row_count):
-            y = int(i * frame_height / row_count)
-            stroke_width = 3 if i%(row_count/2)==0 else 1
-            cv2.line(frame, (0, y), (frame_width, y), (0, 0, 0), stroke_width)
-
-
-        for i in range(column_count):
-            stroke_width = 3 if i%(row_count/2)==0 else 1
-            x = int(i * frame_width / column_count)
-            cv2.line(frame, (x, 0), (x, frame_height), (0, 0, 0), stroke_width)
-
-    def draw_all(self):
-        """
-        Draws the bounding boxes, keypoints and upper body lines related to the last frame. Esnure that 'predict_frame' has been called before this function.
-        """
-        self.draw_bounding_boxes()
-        self.draw_keypoints_points()
-        self.draw_upper_body_lines()
-        self.add_grid()
-
-    def approximate_prediction_distance(self, box_condifence_threshold = 0.25):
+    def approximate_prediction_distance(self, box_condifence_threshold = 0.25, distance_threshold = 1):
         """
         Calculates the distances between the camera and each detected person. if shoulders and hips are detected
+
+        box_condifence_threshold: minimum confidence of the bounding box to be considered while calculating distance
+        distance_threshold: minimum distance that the belly of the person should be away from the camera to be considered while calculating distance in meters
         """
         for result in self.prediction_results["predictions"]:
             # Get the bounding box coordinates
@@ -315,23 +210,127 @@ class poseDetector():
                 v_rh = [rh_uv[0]*scalars[2], rh_uv[1]*scalars[2], rh_uv[2]*scalars[2]]
                 v_lh = [lh_uv[0]*scalars[3], lh_uv[1]*scalars[3], lh_uv[2]*scalars[3]]
 
-                v_belly = [(v_rs[0]+v_lh[0])/2, (v_rs[1]+v_lh[1])/2, (v_rs[2]+v_lh[2])/2]
+                v_belly = [(v_rs[0]+v_ls[0]+v_rh[0]+v_lh[0])/4, (v_rs[1]+v_ls[1]+v_rh[1]+v_lh[1])/4, (v_rs[2]+v_ls[2]+v_rh[2]+v_lh[2])/4]
                 d_belly = math.sqrt(v_belly[0]**2 + v_belly[1]**2 + v_belly[2]**2)
 
-                result["belly_coordinate_wrt_camera"] = v_belly
-                result["belly_distance_wrt_camera"] = d_belly
-                result["is_coordinated_wrt_camera"] = True
+                if d_belly > distance_threshold:
+                    result["belly_coordinate_wrt_camera"] = v_belly
+                    result["belly_distance_wrt_camera"] = d_belly
+                    result["is_coordinated_wrt_camera"] = True       
 
-                print("scalars", scalars)
-                print("v_belly", v_belly)
-                print("d_belly", d_belly)           
-
-           
-
-
-        
-
+    def get_prediction_results(self):
+        """
+        returns the prediction results in the format specified in self.prediction_results
+        """
+        return self.prediction_results
     
+    def draw_bounding_boxes(self, confidence_threshold = 0.25, add_blur = True, blur_kernel_size = 35):
+        """
+        Draws the bounding boxes predicted related to the last frame. Esnure that 'predict_frame' has been called before this function.
+        """
+        frame = self.prediction_results["frame"]
+
+        for result in self.prediction_results["predictions"]:
+            class_name = self.prediction_results["predictions"][0]["class_name"]
+            confidence = result["bbox_confidence"]
+            belly_distance = result["belly_distance_wrt_camera"]
+            belly_vector = result["belly_coordinate_wrt_camera"]
+
+            color_map = lambda x: (0, int(255 * (x)), int(255 * (1-x)) ) #BGR
+            color = color_map(confidence)
+
+            if result["bbox_confidence"] > confidence_threshold:
+                x1, y1, x2, y2 = result["bbox"]
+                x1 = int(x1)
+                y1 = int(y1)
+                x2 = int(x2)
+                y2 = int(y2)
+                
+                cv2.rectangle(frame, (x1,y1), (x2,y2), color, 2)
+
+                if add_blur:
+                    roi = frame[y1:y2, x1:x2]
+                    blurred_roi = cv2.GaussianBlur(roi, (blur_kernel_size, blur_kernel_size), 0)
+                    frame[y1:y2, x1:x2] = blurred_roi
+
+                if result["is_coordinated_wrt_camera"]:
+                    cv2.putText(frame, f"{belly_distance:.1f}m : ({belly_vector[0]:.1f}, {belly_vector[1]:.1f}, {belly_vector[2]:.1f})", (int(result["bbox"][0]), int(result["bbox"][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
+                else:
+                    cv2.putText(frame, f"{class_name}", (int(result["bbox"][0]), int(result["bbox"][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
+
+    def draw_keypoints_points(self, confidence_threshold = 0.25, DOT_SCALE_FACTOR = 1):
+        """
+        Draws the keypoints predicted related to the last frame. Esnure that 'predict_frame' has been called before this function.
+        """
+        DOT_MULTIPLIER = 0.00005
+        frame = self.prediction_results["frame"]
+
+        for result in self.prediction_results["predictions"]:
+
+            dot_radius = math.ceil(DOT_SCALE_FACTOR*(DOT_MULTIPLIER*result["bbox_pixel_area"]))
+
+            for keypoint_name in poseDetector.KEYPOINT_NAMES:
+                keypoint = result["keypoints"][keypoint_name]
+                if keypoint[2] > confidence_threshold:
+                    # Set the radius for the border (stroke)
+                    border_radius = dot_radius + 1  # Increase the radius slightly for the border
+
+                    # Draw the black border
+                    cv2.circle(frame, (int(keypoint[0]), int(keypoint[1])), border_radius, (0, 0, 0), -1)
+
+                    # Draw the white filled circle
+                    cv2.circle(frame, (int(keypoint[0]), int(keypoint[1])), dot_radius, (255, 255, 255), -1)
+
+    def draw_upper_body_lines(self, confidence_threshold = 0.1):
+        """
+        Draws the upper body lines related to the last frame. Esnure that 'predict_frame' has been called before this function.
+        """
+        frame = self.prediction_results["frame"]
+
+        joints_to_be_connected = ["left_shoulder", "right_shoulder", "right_hip", "left_hip"]
+        for result in self.prediction_results["predictions"]:
+            for keypoint_name in poseDetector.KEYPOINT_NAMES:
+                if keypoint_name not in joints_to_be_connected:
+                    continue
+
+                keypoint = result["keypoints"][keypoint_name]
+
+                for joint_name in joints_to_be_connected:
+                    joint = result["keypoints"][joint_name]
+
+                    check_1 = keypoint[0] > 0 and keypoint[1] > 0
+                    check_2 = joint[0] > 0 and joint[1] > 0
+
+                    if check_1 and check_2:
+                        cv2.line(frame, (int(keypoint[0]), int(keypoint[1])), (int(joint[0]), int(joint[1])), (255, 255, 255), 2)
+
+    def draw_grid(self, row_count = 10, column_count = 10):
+        """
+        Draws a grid on the image
+        """
+        frame = self.prediction_results["frame"]
+        frame_height = self.prediction_results['frame_shape'][0]
+        frame_width = self.prediction_results['frame_shape'][1]
+
+        for i in range(row_count):
+            y = int(i * frame_height / row_count)
+            stroke_width = 3 if i%(row_count/2)==0 else 1
+            cv2.line(frame, (0, y), (frame_width, y), (0, 0, 0), stroke_width)
+
+
+        for i in range(column_count):
+            stroke_width = 3 if i%(row_count/2)==0 else 1
+            x = int(i * frame_width / column_count)
+            cv2.line(frame, (x, 0), (x, frame_height), (0, 0, 0), stroke_width)
+
+    def draw_all(self):
+        """
+        Draws the bounding boxes, keypoints and upper body lines related to the last frame. Esnure that 'predict_frame' has been called before this function.
+        """
+        self.draw_bounding_boxes()
+        self.draw_keypoints_points()
+        self.draw_upper_body_lines()
+        self.draw_grid()
 
 if __name__ == "__main__":
     image_path = input("Enter the path to the image: ")
@@ -339,18 +338,18 @@ if __name__ == "__main__":
     # model_path = input("Enter the path to the model: ")
     model_path = "C:\\Users\\Levovo20x\\Documents\\GitHub\\PPE-detection\\scripts\\object_detection\\models\\secret_yolov8n-pose.pt"
 
-    detector = poseDetector(model_path)
+    pose_detector = poseDetector(model_path)
 
     frame = cv2.imread(image_path) #1280, 1024
-
-    detector.predict_frame(frame)
-    detector.approximate_prediction_distance(h_view_angle= 128, v_view_angle= 102)    
-
-    detector.draw_bounding_boxes()
-    detector.draw_keypoints_points(DOT_SCALE_FACTOR = 0.5)
-    detector.draw_upper_body_lines()
-    
    
+    pose_detector.predict_frame(frame, h_angle= 105.5, v_angle= 57.5)
+    pose_detector.approximate_prediction_distance(box_condifence_threshold=0.5)
+
+    pose_detector.draw_bounding_boxes(confidence_threshold=0.25)
+    pose_detector.draw_keypoints_points(DOT_SCALE_FACTOR = 1)
+    pose_detector.draw_upper_body_lines()
+    pose_detector.draw_grid()
+
     cv2.imshow("frame", frame)
     cv2.waitKey(0)
 
