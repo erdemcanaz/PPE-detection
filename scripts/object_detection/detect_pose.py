@@ -351,6 +351,15 @@ class poseDetector():
         self.draw_upper_body_lines()
         self.draw_grid()
 
+    def get_world_coordinates(self):
+        """
+        returns the world coordinates of the belly of the detected persons
+        """
+        world_coordinates = []
+        for result in self.prediction_results["predictions"]:
+            world_coordinates.append(result["belly_coordinate_wrt_world_frame"])
+        return world_coordinates
+    
 if __name__ == "__main__":
     image_path = input("Enter the path to the image: ")
 
