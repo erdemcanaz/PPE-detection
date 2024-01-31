@@ -113,8 +113,8 @@ if __name__ == "__main__":
     result_matrix = None
 
     while True:
-        camera_coordinates = input(f"point {number_of_points}: Enter the camera coordinates of the point as -> v1,v2,v3: ")
-        world_coordinates = input(f"point {number_of_points}: Enter the world coordinates of the point as -> w1,w2,w3: ")
+        camera_coordinates = input(f"point {number_of_points+1}: Enter the camera coordinates of the point as -> v1,v2,v3: ")
+        world_coordinates = input(f"point {number_of_points+1}: Enter the world coordinates of the point as -> w1,w2,w3: ")
         camera_coordinates = np.array(camera_coordinates.split(","), dtype=np.float32)
         world_coordinates = np.array(world_coordinates.split(","), dtype=np.float32)
 

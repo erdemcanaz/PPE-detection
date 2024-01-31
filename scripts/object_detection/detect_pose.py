@@ -41,6 +41,9 @@ class poseDetector():
                     "is_coordinated_wrt_camera": False, # True if the coordinates are wrt the camera, False if they are wrt the frame
                     "belly_coordinate_wrt_camera": [0,0,0], # [x,y,z] coordinates of the object wrt the camera
                     "belly_distance_wrt_camera": 0, # distance between the camera and the object in meters
+                    "is_coordinated_wrt_world_frame": False,
+                    "belly_coordinate_wrt_world_frame":np.array([[0],[0],[0]]),
+                    "belly_distance_wrt_world_frame": 0,
                     "keypoints": { # Keypoints are in the format [x,y,confidence]
                         "left_eye": [0,0,0],
                         "right_eye": [0,0,0],
@@ -100,8 +103,11 @@ class poseDetector():
                 "bbox": box_xyxy, # Bounding box in the format [x1,y1,x2,y2]
                 "bbox_pixel_area": bbox_pixel_area,
                 "is_coordinated_wrt_camera": False,
-                "belly_coordinate_wrt_camera": [0,0,0], # [x,y,z] coordinates of the object wrt the camera
+                "belly_coordinate_wrt_camera": np.array([[0],[0],[0]]), # [x,y,z] coordinates of the object wrt the camera
                 "belly_distance_wrt_camera": 0, # distance between the camera and the object in meters
+                "is_coordinated_wrt_world_frame": False,
+                "belly_coordinate_wrt_world_frame":np.array([[0],[0],[0]]),
+                "belly_distance_wrt_world_frame": 0,
                 "keypoints": { # Keypoints are in the format [x,y,confidence,x_angle, y_angle]
                         "left_eye": [0,0,0,0,0],
                         "right_eye": [0,0,0,0,0],
@@ -142,7 +148,7 @@ class poseDetector():
 
             self.prediction_results["predictions"].append(result_detection_dict)
 
-    def approximate_prediction_distance(self, box_condifence_threshold = 0.25, distance_threshold = 1):
+    def approximate_prediction_distance(self, box_condifence_threshold = 0.25, distance_threshold = 1, transformation_matrices = None):
         """
         Calculates the distances between the camera and each detected person. if shoulders and hips are detected
 
@@ -202,7 +208,7 @@ class poseDetector():
             minimizer_result = minimize(minimizer_function, initial_guess, args=( unit_vectors, ), method='L-BFGS-B', tol=tolerance, bounds = bounds)
             
             if minimizer_result.success == True:
-            
+
                 # k_rs, k_ls, k_rh, k_lh = unknowns
                 scalars = minimizer_result.x
                 v_rs = [rs_uv[0]*scalars[0], rs_uv[1]*scalars[0], rs_uv[2]*scalars[0]]
@@ -213,10 +219,23 @@ class poseDetector():
                 v_belly = [(v_rs[0]+v_ls[0]+v_rh[0]+v_lh[0])/4, (v_rs[1]+v_ls[1]+v_rh[1]+v_lh[1])/4, (v_rs[2]+v_ls[2]+v_rh[2]+v_lh[2])/4]
                 d_belly = math.sqrt(v_belly[0]**2 + v_belly[1]**2 + v_belly[2]**2)
 
+                #v_belly = A(world_coordinate) + C
+                A = transformation_matrices[0]
+                C = transformation_matrices[1]
+
+                v_belly = np.array(v_belly)
+                v_belly = np.reshape(v_belly, (3,1))
+
+
                 if d_belly > distance_threshold:
                     result["belly_coordinate_wrt_camera"] = v_belly
                     result["belly_distance_wrt_camera"] = d_belly
                     result["is_coordinated_wrt_camera"] = True       
+
+                    world_coordinate = np.linalg.pinv(A) @ (v_belly - C)
+                    result["belly_coordinate_wrt_world_frame"] = world_coordinate
+                    result["belly_distance_wrt_world_frame"] = math.sqrt(world_coordinate[0][0]**2 + world_coordinate[1][0]**2 + world_coordinate[2][0]**2)
+                    result["is_coordinated_wrt_world_frame"] = True
 
     def get_prediction_results(self):
         """
@@ -234,7 +253,7 @@ class poseDetector():
             class_name = self.prediction_results["predictions"][0]["class_name"]
             confidence = result["bbox_confidence"]
             belly_distance = result["belly_distance_wrt_camera"]
-            belly_vector = result["belly_coordinate_wrt_camera"]
+            belly_vector = result["belly_coordinate_wrt_world_frame"]
 
             color_map = lambda x: (0, int(255 * (x)), int(255 * (1-x)) ) #BGR
             color = color_map(confidence)
@@ -253,10 +272,10 @@ class poseDetector():
                     blurred_roi = cv2.GaussianBlur(roi, (blur_kernel_size, blur_kernel_size), 0)
                     frame[y1:y2, x1:x2] = blurred_roi
 
-                if result["is_coordinated_wrt_camera"]:
-                    cv2.putText(frame, f"{belly_distance:.1f}m : ({belly_vector[0]:.1f}, {belly_vector[1]:.1f}, {belly_vector[2]:.1f})", (int(result["bbox"][0]), int(result["bbox"][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
+                if result["is_coordinated_wrt_world_frame"]:
+                    cv2.putText(frame, f"{belly_distance:.1f}m : ({belly_vector[0][0]:.1f}, {belly_vector[1][0]:.1f}, {belly_vector[2][0]:.1f})", (int(result["bbox"][0]), int(result["bbox"][1])), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2, cv2.LINE_AA)
                 else:
-                    cv2.putText(frame, f"{class_name}", (int(result["bbox"][0]), int(result["bbox"][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
+                    cv2.putText(frame, f"{class_name}", (int(result["bbox"][0]), int(result["bbox"][1])), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2, cv2.LINE_AA)
 
     def draw_keypoints_points(self, confidence_threshold = 0.25, DOT_SCALE_FACTOR = 1):
         """
