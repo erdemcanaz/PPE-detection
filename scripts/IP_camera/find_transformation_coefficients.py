@@ -104,6 +104,65 @@
 # A * X = B 
 # using least squares method which will give you the unknowns
 
+if __name__ == "__main__":
+    import numpy as np
+    import pprint
+
+    number_of_points = 0
+    row_matrix = None
+    result_matrix = None
+
+    while True:
+        camera_coordinates = input(f"point {number_of_points}: Enter the camera coordinates of the point as -> v1,v2,v3: ")
+        world_coordinates = input(f"point {number_of_points}: Enter the world coordinates of the point as -> w1,w2,w3: ")
+        camera_coordinates = np.array(camera_coordinates.split(","), dtype=np.float32)
+        world_coordinates = np.array(world_coordinates.split(","), dtype=np.float32)
+
+        new_rows = np.array(
+            [
+            [world_coordinates[0], world_coordinates[1], world_coordinates[2], 0, 0, 0, 0, 0, 0, 1, 0, 0],
+            [0, 0, 0, world_coordinates[0], world_coordinates[1], world_coordinates[2], 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, world_coordinates[0], world_coordinates[1], world_coordinates[2], 0, 0, 1]
+            ]
+            )
+        new_results = np.array(
+            [
+            [camera_coordinates[0]], 
+            [camera_coordinates[1]],
+            [camera_coordinates[2]]
+            ])
+
+        if row_matrix is None:
+            row_matrix = new_rows
+            result_matrix = new_results
+        else:
+            row_matrix = np.vstack((row_matrix, new_rows))
+            result_matrix = np.vstack((result_matrix, new_results))
+
+        number_of_points +=1
+
+        pprint.pprint("ROW MATRIX:")
+        pprint.pprint(row_matrix)
+        pprint.pprint("RESULT MATRIX:")
+        pprint.pprint(result_matrix)
+
+        if number_of_points >= 4:
+            continue_input = input("Do you want to continue? (y/n): ")
+            if continue_input != "y":
+
+                #solve the equation using least squares method
+                # A * X = B                
+                # X = [α11, α12, α13, α21, α22, α23, α31, α32, α33, c1, c2, c3]
+
+                # Using numpy's lstsq function to solve for x
+                x, residuals, rank, s = np.linalg.lstsq(row_matrix, result_matrix, rcond=None)
+                row_names = ["alpha_11", "alpha_12", "alpha_13", "alpha_21", "alpha_22", "alpha_23", "alpha_31", "alpha_32", "alpha_33", "c1", "c2", "c3"]
+                for row_name, row in zip(row_names, x):
+                    print(f"{row_name:<15}: {row[0]:.6f}")
+                break
+            
+
+
 
 
 
