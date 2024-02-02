@@ -1,4 +1,4 @@
-import os, pprint, json
+import os, pprint, json,time
 import scripts.video_analyzer as video_analyzer
 import scripts.detect_pose as detect_pose
 from datetime import datetime, timedelta, timezone
@@ -9,7 +9,6 @@ if os.name == 'nt':
     # For Unix/Linux or macOS, use 'clear'
 else:
     os.system('clear')
-
 #===========================IMPORT VIDEO=================================
 video_analyzer_object = video_analyzer.videoAnalyzer()
 video_start_date = datetime(year = 2024, month = 1, day = 31, hour = 8, second = 1, tzinfo= timezone(timedelta(hours=3)))##year, month, day, hour, minute, second, tzinfo
@@ -35,8 +34,8 @@ transformation_matrices = (A_MATRIX, C_MATRIX)
 
 #==============================ANALYZE VIDEO================================
 
-sampling_interval_bounds = (0.5, 15) #seconds
-interval_increment = 1
+sampling_interval_bounds = (0.50, 15) #seconds
+interval_increment = 2.5
 sampling_interval_seconds = sampling_interval_bounds[0]
 min_confidence_to_decrese_interval = 0.65
 
@@ -67,10 +66,24 @@ while video_analyzer_object.fast_forward_seconds(sampling_interval_seconds):
     else:
         sampling_interval_seconds = min(sampling_interval_seconds + interval_increment, sampling_interval_bounds[1]) #sample less frequently
 
+    if region_data["RULES_APPLIED"]["RESTRICTED_AREA"]:
+        restricted_regions = region_data["RESTRICTED_AREA_COORDINATES"]
+
+        for restricted_region in restricted_regions:
+            x1, y1, x2, y2 = restricted_region
+            for pose_result in pose_results["predictions"]:
+                if pose_result["is_coordinated_wrt_world_frame"]:
+                    person_x = pose_result["belly_coordinate_wrt_world_frame"][0][0]
+                    person_y = pose_result["belly_coordinate_wrt_world_frame"][1][0]
+                    person_z = pose_result["belly_coordinate_wrt_world_frame"][2][0]
+                    if x1 <= person_x <= x2 and y1 <= person_y <= y2:
+                        print(f"Person detected in restricted area at {video_analyzer_object.get_current_seconds():.2f} seconds")
+                        time.sleep(5)
+
+
+    #Informative part, no functional purpose================================
     pose_detector_object.draw_keypoints_points(confidence_threshold = 0.25, DOT_SCALE_FACTOR = 1)
-    pose_detector_object.draw_upper_body_lines(confidence_threshold = 0.1)
-
-
+    pose_detector_object.draw_upper_body_lines(confidence_threshold = 0.1)    
     pose_detector_object.draw_bounding_boxes( confidence_threshold = 0.1, add_blur = True, blur_kernel_size = 15)
     number_of_detections = len(pose_results["predictions"])    
     
