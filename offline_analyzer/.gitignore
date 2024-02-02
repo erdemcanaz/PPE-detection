@@ -2,11 +2,13 @@
 videos/*
 yolo_models/*
 regional_data/*
+csv_results/*
 
 # Git ignore empty folders, thus we need to keep the .gitkeep file
 !videos/.gitkeep 
 !yolo_models/.gitkeep
 !regional_data/.gitkeep
+!csv_results/.gitkeep
 
 # Ignore pycache folders and their contents
 __pycache__/

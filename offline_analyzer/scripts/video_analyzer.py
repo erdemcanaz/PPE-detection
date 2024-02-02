@@ -78,8 +78,19 @@ class videoAnalyzer:
         ret, frame = self.video_capture_object.read()
         #reading increment the frame index by 1, thus we need to decrement it by 1
         self.video_capture_object.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_index)
-
         return frame
+    
+    def get_str_current_date(self) -> str:    
+        return self.VIDEO_START_DATE + datetime.timedelta(seconds=self.current_frame_index/self.VIDEO_FPS)    
+       
+    
+    
+    def get_str_current_video_time(self) -> str:
+        seconds_now = self.current_frame_index/self.VIDEO_FPS
+        hours, remainder = divmod(self.current_frame_index/self.VIDEO_FPS, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        return f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
     
     def get_current_seconds(self) -> int:
         return self.current_frame_index/self.VIDEO_FPS
