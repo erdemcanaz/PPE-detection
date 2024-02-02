@@ -1,0 +1,6 @@
+#ignore the content of the "videos" folder but keep it
+*videos/* 
+#git ignore empty folders, thus we need to keep the .gitkeep file
+!videos/.gitkeep 
+
+*__pycache__
