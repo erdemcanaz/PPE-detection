@@ -1,4 +1,4 @@
-import mimetypes, os
+import mimetypes, os, math
 import cv2
 import datetime
 
@@ -6,14 +6,17 @@ class videoAnalyzer:
 
     def __init__(self)-> None:
         self.VIDEO_PATH = None
+        self.MIME_TYPE = None
         self.VIDEO_FRAME_COUNT = None    
         self.VIDEO_FPS = None  
         self.VIDEO_START_DATE = None
+        self.VIDEO_END_DATE = None
+        self.TOTAL_SECONDS = None        
 
         self.video_capture_object = None
         self.current_frame_index = None    
 
-    def set_video(self, video_path: str, date: datetime.datetime) -> None:
+    def import_video(self, video_path: str, video_start_date: datetime.datetime) -> None:
         #mime-type = type "/" [tree "."] subtype ["+" suffix]* [";" parameter];
         #NOTE: this is a regex pattern. Thus may not be the best way to check for the path type. Yet simple one.
         if video_path is None:
@@ -31,25 +34,103 @@ class videoAnalyzer:
         if not mimetype.startswith('video'):
             raise ValueError("Given file is not a video file")
         
+        if video_start_date is None:
+            raise ValueError("Video start date is not provided")
+        
         self.VIDEO_PATH = video_path
         self.video_capture_object = cv2.VideoCapture(video_path)
+        self.MIME_TYPE = mimetype
+        self.current_frame_index = 0
         self.VIDEO_FRAME_COUNT = int(self.video_capture_object.get(cv2.CAP_PROP_FRAME_COUNT))
         self.VIDEO_FPS = self.video_capture_object.get(cv2.CAP_PROP_FPS)
+        self.VIDEO_START_DATE = video_start_date
+        self.VIDEO_END_DATE = video_start_date + datetime.timedelta(seconds = self.VIDEO_FRAME_COUNT/self.VIDEO_FPS)
+        self.TOTAL_SECONDS = self.VIDEO_FRAME_COUNT/self.VIDEO_FPS
 
-
-        print("=============================================")
-        print(f"File name: {os.path.basename(self.VIDEO_PATH)}")
-        print(f"Video path: {self.VIDEO_PATH}")
-        print(f"Video frame count: {self.VIDEO_FRAME_COUNT}")
-        print(f"Video FPS: {self.VIDEO_FPS:.2f}")
-        total_seconds = self.VIDEO_FRAME_COUNT/self.VIDEO_FPS
-        hours, remainder = divmod(total_seconds, 3600)
+        hours, remainder = divmod(self.TOTAL_SECONDS, 3600)
         minutes, seconds = divmod(remainder, 60)
-        print(f"Video duration: {int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}")
-        print(f"MIME type: {mimetype}")
-        print(f"Video start date: {date}")
-        print(f"Video end date: {date + datetime.timedelta(seconds = total_seconds)}")
+        print("=============================================")
+        print(f">{'File name':<20}: {os.path.basename(self.VIDEO_PATH)}")
+        print(f">{ 'Video path':<20}: {self.VIDEO_PATH}")
+        print(f">{ 'Video frame count':<20}: {self.VIDEO_FRAME_COUNT}")
+        print(f">{ 'Video FPS':<20}: {self.VIDEO_FPS:.2f}")
+        print(f">{ 'Video duration':<20}: {int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}")
+        print(f">{ 'MIME type':<20}: {self.MIME_TYPE}")
+        print(f">{ 'Video start date':<20}: {self.VIDEO_START_DATE}")
+        print(f">{ 'Video end date':<20}: {self.VIDEO_START_DATE + datetime.timedelta(seconds=self.TOTAL_SECONDS)}")
         print("=============================================")
 
+    def get_current_frame_index(self) -> int:
+        return self.current_frame_index
+    
+    def get_video_duration_in_seconds(self)->int:
+        return self.TOTAL_SECONDS
+    
+    def get_total_frames(self)->int:
+        return self.VIDEO_FRAME_COUNT
+    
+    def get_current_frame(self) -> None:
+        ret, frame = self.video_capture_object.read()
+        if ret:
+            cv2.imshow("Frame", frame)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+        else:
+            raise ValueError("End of video")
 
+        self.video_capture_object.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_index)
 
+    def set_current_frame_index(self, frame_index: int) -> None:
+        if frame_index < 0 or frame_index > self.VIDEO_FRAME_COUNT:
+            raise ValueError("Invalid frame index")
+        self.current_frame_index = frame_index
+        self.video_capture_object.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+   
+    def safe_fast_forward_seconds(self, forwarding_seconds: int) -> bool:
+        if forwarding_seconds < 0:
+            raise ValueError("Seconds must be positive")
+        
+        number_of_frames_to_forward = math.floor(forwarding_seconds * self.VIDEO_FPS)
+        if (self.current_frame_index + number_of_frames_to_forward) > self.VIDEO_FRAME_COUNT:
+            return False
+        return True
+    
+    def fast_forward_seconds(self, forwarding_seconds: int) -> None:
+        if forwarding_seconds < 0:
+            raise ValueError("Seconds must be positive")       
+        number_of_frames_to_forward = math.floor(forwarding_seconds * self.VIDEO_FPS)
+        if (self.current_frame_index + number_of_frames_to_forward) > self.VIDEO_FRAME_COUNT:
+            if self.current_frame_index == self.VIDEO_FRAME_COUNT:
+                return False
+            else:
+                self.current_frame_index = self.VIDEO_FRAME_COUNT
+                return True
+                        
+        self.current_frame_index += number_of_frames_to_forward
+        self.video_capture_object.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_index)
+        return True
+
+    def fast_backward_seconds(self, backward_seconds: int) -> None:
+        if backward_seconds < 0:
+            raise ValueError("Seconds must be positive")
+        number_of_frames_to_backward = math.floor(backward_seconds * self.VIDEO_FPS)
+        if (self.current_frame_index - number_of_frames_to_backward) < 0:
+            if self.current_frame_index == 0:
+                return False
+            else:
+                self.current_frame_index = 0
+                return True
+        self.current_frame_index -= number_of_frames_to_backward
+        self.video_capture_object.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_index)
+        return True
+    
+    def show_current_frame(self) -> None:
+        ret, frame = self.video_capture_object.read()
+        if ret:
+            cv2.imshow("Frame", frame)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+        else:
+            print("End of video")
+        
+        self.video_capture_object.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_index)

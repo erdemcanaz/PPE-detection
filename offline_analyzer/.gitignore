@@ -1,6 +1,7 @@
-#ignore the content of the "videos" folder but keep it
+#ignore the content of the folders but keep it
 *videos/* 
+*yolo_models/*
 #git ignore empty folders, thus we need to keep the .gitkeep file
 !videos/.gitkeep 
-
+!yolo_models/.gitkeep
 *__pycache__
