@@ -80,6 +80,9 @@ class videoAnalyzer:
         self.video_capture_object.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_index)
 
         return frame
+    
+    def get_current_seconds(self) -> int:
+        return self.current_frame_index/self.VIDEO_FPS
 
     def set_current_frame_index(self, frame_index: int) -> None:
         if frame_index < 0 or frame_index > self.VIDEO_FRAME_COUNT:

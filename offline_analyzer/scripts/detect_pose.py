@@ -40,7 +40,7 @@ class poseDetector():
                 "postprocess": None
             },
             "predictions":[
-                
+                # The format of the prediction dictionary is specified in self._PREDICTION_DICT_TEMPLATE()
             ]
         }
 
@@ -105,13 +105,11 @@ class poseDetector():
             bbox_pixel_area = (box_xyxy[2]-box_xyxy[0])*(box_xyxy[3]-box_xyxy[1])
 
             result_detection_dict = self._PREDICTION_DICT_TEMPLATE()
-            result_detection_dict = {                
-                "class_index":box_cls_no,
-                "class_name":box_cls_name,
-                "bbox_confidence":box_conf,
-                "bbox": box_xyxy, # Bounding box in the format [x1,y1,x2,y2]
-                "bbox_pixel_area": bbox_pixel_area,                       
-            }       
+            result_detection_dict ["class_index"] = box_cls_no
+            result_detection_dict ["class_name"] = box_cls_name
+            result_detection_dict ["bbox_confidence"] = box_conf
+            result_detection_dict ["bbox"] = box_xyxy # Bounding box in the format [x1,y1,x2,y2]
+            result_detection_dict ["bbox_pixel_area"] = bbox_pixel_area
 
             key_points = result.keypoints  # Keypoints object for pose outputs
             keypoint_confs = key_points.conf.cpu().numpy()[0]
@@ -120,7 +118,6 @@ class poseDetector():
             frame_height = self.prediction_results['frame_shape'][0]
             frame_width = self.prediction_results['frame_shape'][1]
 
-            #KEYPOINT_NAMES = ["left_eye", "rigt_eye", "nose", "left_ear", "right_ear", "left_shoulder", "right_shoulder", "left_elbow" ,"right_elbow","left_wrist", "right_wrist", "left_hip", "right_hip", "left_knee", "right_knee", "left_ankle", "right_ankle"]
             for keypoint_index, keypoint_name in enumerate(poseDetector.KEYPOINT_NAMES):
                 keypoint_conf = keypoint_confs[keypoint_index] 
                 keypoint_x = keypoints_xy[keypoint_index][0]
@@ -226,6 +223,32 @@ class poseDetector():
         returns the prediction results in the format specified in self.prediction_results
         """
         return self.prediction_results
+
+    def get_person_detected_frame_regions(self):
+        """
+        returns the regions of a frame where a person was detected
+        """        
+        frame = self.prediction_results["frame"]
+        person_regions = []
+        for result in self.prediction_results["predictions"]:
+            x1,y1,x2,y2 = result["bbox"]
+            x1,y1,x2,y2 = int(x1), int(y1),int(x2),int(y2)
+
+            # Extract the region of the frame where the person is detected
+            person_region = frame[y1:y2, x1:x2]
+            person_regions.append(person_region)
+
+        return person_regions
+
+    def get_max_confidence_among_results(self):
+        """
+        returns the maximum confidence among the predictions
+        """
+        max_confidence = 0
+        for result in self.prediction_results["predictions"]:
+            if result["bbox_confidence"] > max_confidence:
+                max_confidence = result["bbox_confidence"]
+        return max_confidence
     
     def draw_bounding_boxes(self, confidence_threshold = 0.25, add_blur = True, blur_kernel_size = 35):
         """
