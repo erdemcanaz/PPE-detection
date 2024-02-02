@@ -1,7 +1,12 @@
-#ignore the content of the folders but keep it
-*videos/* 
-*yolo_models/*
-#git ignore empty folders, thus we need to keep the .gitkeep file
+# Ignore the content of the folders but keep them
+videos/*
+yolo_models/*
+regional_data/*
+
+# Git ignore empty folders, thus we need to keep the .gitkeep file
 !videos/.gitkeep 
 !yolo_models/.gitkeep
-*__pycache__
+!regional_data/.gitkeep
+
+# Ignore pycache folders and their contents
+__pycache__/

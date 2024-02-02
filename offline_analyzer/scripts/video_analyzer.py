@@ -8,6 +8,8 @@ class videoAnalyzer:
         self.VIDEO_PATH = None
         self.MIME_TYPE = None
         self.VIDEO_FRAME_COUNT = None    
+        self.VIDEO_WIDTH = None
+        self.VIDEO_HEIGHT = None
         self.VIDEO_FPS = None  
         self.VIDEO_START_DATE = None
         self.VIDEO_END_DATE = None
@@ -41,6 +43,8 @@ class videoAnalyzer:
         self.video_capture_object = cv2.VideoCapture(video_path)
         self.MIME_TYPE = mimetype
         self.current_frame_index = 0
+        self.FRAME_WIDTH = int(self.video_capture_object.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.FRAME_HEIGHT = int(self.video_capture_object.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.VIDEO_FRAME_COUNT = int(self.video_capture_object.get(cv2.CAP_PROP_FRAME_COUNT))
         self.VIDEO_FPS = self.video_capture_object.get(cv2.CAP_PROP_FPS)
         self.VIDEO_START_DATE = video_start_date
@@ -52,6 +56,7 @@ class videoAnalyzer:
         print("=============================================")
         print(f">{'File name':<20}: {os.path.basename(self.VIDEO_PATH)}")
         print(f">{ 'Video path':<20}: {self.VIDEO_PATH}")
+        print(f">{ 'Video resolution':<20}: {self.FRAME_WIDTH}x{self.FRAME_HEIGHT}")
         print(f">{ 'Video frame count':<20}: {self.VIDEO_FRAME_COUNT}")
         print(f">{ 'Video FPS':<20}: {self.VIDEO_FPS:.2f}")
         print(f">{ 'Video duration':<20}: {int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}")
@@ -71,14 +76,10 @@ class videoAnalyzer:
     
     def get_current_frame(self) -> None:
         ret, frame = self.video_capture_object.read()
-        if ret:
-            cv2.imshow("Frame", frame)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
-        else:
-            raise ValueError("End of video")
-
+        #reading increment the frame index by 1, thus we need to decrement it by 1
         self.video_capture_object.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_index)
+
+        return frame
 
     def set_current_frame_index(self, frame_index: int) -> None:
         if frame_index < 0 or frame_index > self.VIDEO_FRAME_COUNT:
@@ -124,12 +125,24 @@ class videoAnalyzer:
         self.video_capture_object.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_index)
         return True
     
-    def show_current_frame(self) -> None:
+    def show_current_frame(self, frame_ratio = 1, close_window_after = False) -> None:
+        # should be only used to test the video, has no purpose in the final product
+        if frame_ratio < 0 or frame_ratio > 1:
+            raise ValueError("Frame ratio must be between 0 and 1")
+        
         ret, frame = self.video_capture_object.read()
+        frame_to_show = frame
+        if frame_ratio != 1:  # Only resize if the ratio is not 1
+            new_width = int(frame.shape[1] * frame_ratio)
+            new_height = int(frame.shape[0] * frame_ratio)
+            resized_frame = cv2.resize(frame, (new_width, new_height))
+            frame_to_show = resized_frame
+
         if ret:
-            cv2.imshow("Frame", frame)
+            cv2.imshow("Frame", frame_to_show)
             cv2.waitKey(0)
-            cv2.destroyAllWindows()
+            if close_window_after:
+                cv2.destroyAllWindows()
         else:
             print("End of video")
         
