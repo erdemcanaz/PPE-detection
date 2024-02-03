@@ -3,6 +3,7 @@ import random
 
 class TrackerSupervisor:
     def __init__(self, max_age: int = 10, max_px_distance = 1000, confidence_threshold = 0.5, speed_attenuation_constant = 0.9)-> None:
+        self.last_id = 0
         self.object_trackers = [] 
         self.MAX_AGE = max_age
         self.MAX_PX_DISTANCE = max_px_distance
@@ -68,17 +69,8 @@ class TrackerSupervisor:
                 if pass_detection:
                     continue                  
                             
-                tracker_ids = [tracker.TRACK_ID for tracker in self.object_trackers]
-
-                new_id = None
-                for i in range(1000):
-                    if i not in tracker_ids:
-                        new_id = i
-                        break
-                    
-                while new_id in tracker_ids:
-                    new_id = random.choice([i for i in range(1000) if i not in tracker_ids])
-                self.object_trackers.append(Tracker(track_id = new_id, max_age = self.MAX_AGE, px = detection["bbox_center"][0], py = detection["bbox_center"][1]))
+                self.last_id = self.last_id + 1
+                self.object_trackers.append(Tracker(track_id = self.last_id, max_age = self.MAX_AGE, px = detection["bbox_center"][0], py = detection["bbox_center"][1]))
 
     def draw_trackers(self,frame):
         for tracker in self.object_trackers:
