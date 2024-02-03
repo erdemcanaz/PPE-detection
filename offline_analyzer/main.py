@@ -129,7 +129,7 @@ while video_analyzer_object.fast_forward_seconds(sampling_interval_seconds):
     #Print progress
     frame_index_now = video_analyzer_object.get_current_frame_index()
     total_frame_count = video_analyzer_object.get_total_frames()
-    print(f"(%{100*frame_index_now/total_frame_count:.1f}) Int: {sampling_interval_seconds:0.2f}s : Frame {frame_index_now}/{total_frame_count} - {number_of_detections} detections")
+    print(f"(%{100*frame_index_now/total_frame_count:.2f}) Int: {sampling_interval_seconds:0.2f}s : Frame {frame_index_now}/{total_frame_count} - {number_of_detections} detections")
 
     cv2.imshow("Frame", sampled_frame)
     cv2.waitKey(1)
