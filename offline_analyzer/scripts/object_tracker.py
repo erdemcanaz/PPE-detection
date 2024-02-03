@@ -9,6 +9,12 @@ class TrackerSupervisor:
         self.CONFIDENCE_THRESHOLD = confidence_threshold
         self.SPEED_ATTENUATION_CONSTANT = speed_attenuation_constant
 
+    def clear_trackers(self):
+        for tracker in self.object_trackers:
+            del tracker
+        self.object_trackers = []
+        print("All trackers are cleared")
+
     def update_trackers_with_detections(self, detections):
         #detections are the center coordinates of the bounding boxes, confidences and the x,y,z coordinates of the person
         
@@ -47,12 +53,31 @@ class TrackerSupervisor:
 
         for detection in detections:
             if detection not in matched_detections:
+                #some detections are on top of each other due to the nature of the pose detector. We ignore the ones with low confidence since they are likely to be the same person              
+                #IF the confidence is low, pass this detection
+                if detection["confidence"] < self.CONFIDENCE_THRESHOLD:
+                    continue 
+                #IF there is already a very close tracker (i.e. inside box), pass this detection
+                pass_detection = False
+                x1,y1,x2,y2 = detection["bbox_xyxy"]
+                for tracker in self.object_trackers:
+                    tx1,ty1 = tracker.get_last_position()
+                    if (x1<tx1<x2) and (y1<ty1<y2):
+                        pass_detection = True
+                        break
+                if pass_detection:
+                    continue                  
+                            
                 tracker_ids = [tracker.TRACK_ID for tracker in self.object_trackers]
 
-                new_id = random.choice([i for i in range(1000) if i not in tracker_ids])
+                new_id = None
+                for i in range(1000):
+                    if i not in tracker_ids:
+                        new_id = i
+                        break
+                    
                 while new_id in tracker_ids:
                     new_id = random.choice([i for i in range(1000) if i not in tracker_ids])
-
                 self.object_trackers.append(Tracker(track_id = new_id, max_age = self.MAX_AGE, px = detection["bbox_center"][0], py = detection["bbox_center"][1]))
 
     def draw_trackers(self,frame):
@@ -61,13 +86,18 @@ class TrackerSupervisor:
             center_px= int(tracker.get_last_position()[0])
             center_py= int(tracker.get_last_position()[1])
 
-            cv2.putText(frame, tracker_name, (center_px, center_py), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            cv2.circle(frame, (center_px, center_py), 4, (0, 255, 0), -1)          
+            color = (0, 255, 0)
+            if tracker.get_track_state() == 0:
+                color = (0, 0, 255)
+            cv2.putText(frame, tracker_name, (center_px, center_py), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+            cv2.circle(frame, (center_px, center_py), 4, color, -1)          
 
 class Tracker:
+
     def __init__(self, track_id: int, max_age: int = None, px: int = None, py: int = None):        
         self.TRACK_ID = track_id
         self.MAX_AGE = max_age
+        self.state = 1 # 1: tracking, 0: waiting
         self.current_position = [px, py]
         self.age = 0
         self.last_position = None
@@ -76,8 +106,12 @@ class Tracker:
     def get_track_id(self) -> int:
         return self.track_id
     
+    def get_track_state(self) -> int:
+        return self.state
+    
     def set_position(self, px: int, py: int) -> None:
         print(f"Tracker {self.TRACK_ID} is updated with new position: {px}, {py}")
+        self.state = 1
         self.age = 0
         self.last_position = self.current_position
         self.current_position = [px, py]
@@ -85,6 +119,7 @@ class Tracker:
         self.speed[1] = self.current_position[1] - self.last_position[1]
 
     def update_position_using_speed(self, attenuation_factor = 1) -> None:
+        self.state = 0
         self.age +=1
         self.last_position = self.current_position
         self.current_position[0] += self.speed[0]*attenuation_factor

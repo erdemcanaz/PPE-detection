@@ -113,6 +113,19 @@ class videoAnalyzer:
         self.current_frame_index += number_of_frames_to_forward
         self.video_capture_object.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_index)
         return True
+    
+    def fast_forward_frames(self, number_of_frames: int) -> None:
+        if number_of_frames < 0:
+            raise ValueError("Number of frames must be positive")
+        if (self.current_frame_index + number_of_frames) > self.VIDEO_FRAME_COUNT:
+            if self.current_frame_index == self.VIDEO_FRAME_COUNT:
+                return False
+            else:
+                self.current_frame_index = self.VIDEO_FRAME_COUNT
+                return True
+        self.current_frame_index += number_of_frames
+        self.video_capture_object.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_index)
+        return True
 
     def fast_backward_seconds(self, backward_seconds: int) -> None:
         if backward_seconds < 0:
@@ -125,6 +138,19 @@ class videoAnalyzer:
                 self.current_frame_index = 0
                 return True
         self.current_frame_index -= number_of_frames_to_backward
+        self.video_capture_object.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_index)
+        return True
+    
+    def fast_backward_frames(self, number_of_frames: int) -> None:
+        if number_of_frames < 0:
+            raise ValueError("Number of frames must be positive")
+        if (self.current_frame_index - number_of_frames) < 0:
+            if self.current_frame_index == 0:
+                return False
+            else:
+                self.current_frame_index = 0
+                return True
+        self.current_frame_index -= number_of_frames
         self.video_capture_object.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_index)
         return True
     
