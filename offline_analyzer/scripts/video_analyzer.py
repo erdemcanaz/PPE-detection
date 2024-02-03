@@ -83,8 +83,6 @@ class videoAnalyzer:
     def get_str_current_date(self) -> str:    
         return self.VIDEO_START_DATE + datetime.timedelta(seconds=self.current_frame_index/self.VIDEO_FPS)    
        
-    
-    
     def get_str_current_video_time(self) -> str:
         seconds_now = self.current_frame_index/self.VIDEO_FPS
         hours, remainder = divmod(self.current_frame_index/self.VIDEO_FPS, 3600)
@@ -100,20 +98,11 @@ class videoAnalyzer:
             raise ValueError("Invalid frame index")
         self.current_frame_index = frame_index
         self.video_capture_object.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
-   
-    def safe_fast_forward_seconds(self, forwarding_seconds: int) -> bool:
-        if forwarding_seconds < 0:
-            raise ValueError("Seconds must be positive")
-        
-        number_of_frames_to_forward = math.floor(forwarding_seconds * self.VIDEO_FPS)
-        if (self.current_frame_index + number_of_frames_to_forward) > self.VIDEO_FRAME_COUNT:
-            return False
-        return True
-    
+       
     def fast_forward_seconds(self, forwarding_seconds: int) -> None:
         if forwarding_seconds < 0:
             raise ValueError("Seconds must be positive")       
-        number_of_frames_to_forward = math.floor(forwarding_seconds * self.VIDEO_FPS)
+        number_of_frames_to_forward = math.floor(forwarding_seconds * self.VIDEO_FPS)+1
         if (self.current_frame_index + number_of_frames_to_forward) > self.VIDEO_FRAME_COUNT:
             if self.current_frame_index == self.VIDEO_FRAME_COUNT:
                 return False
@@ -128,7 +117,7 @@ class videoAnalyzer:
     def fast_backward_seconds(self, backward_seconds: int) -> None:
         if backward_seconds < 0:
             raise ValueError("Seconds must be positive")
-        number_of_frames_to_backward = math.floor(backward_seconds * self.VIDEO_FPS)
+        number_of_frames_to_backward = math.floor(backward_seconds * self.VIDEO_FPS)+1
         if (self.current_frame_index - number_of_frames_to_backward) < 0:
             if self.current_frame_index == 0:
                 return False
@@ -139,6 +128,12 @@ class videoAnalyzer:
         self.video_capture_object.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_index)
         return True
     
+    def set_current_seconds(self, seconds: int) -> None:
+        if seconds < 0 or seconds > self.TOTAL_SECONDS:
+            raise ValueError("Invalid seconds")
+        self.current_frame_index = math.floor(seconds * self.VIDEO_FPS)
+        self.video_capture_object.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_index)
+
     def show_current_frame(self, frame_ratio = 1, close_window_after = False) -> None:
         # should be only used to test the video, has no purpose in the final product
         if frame_ratio < 0 or frame_ratio > 1:

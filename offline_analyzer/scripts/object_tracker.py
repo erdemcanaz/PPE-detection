@@ -1,11 +1,13 @@
-
+import cv2
+import random
 
 class TrackerSupervisor:
-    def __init__(self, max_age: int = 10, max_px_distance = 1000, confidence_threshold = 0.5)-> None:
+    def __init__(self, max_age: int = 10, max_px_distance = 1000, confidence_threshold = 0.5, speed_attenuation_constant = 0.9)-> None:
         self.object_trackers = [] 
         self.MAX_AGE = max_age
         self.MAX_PX_DISTANCE = max_px_distance
         self.CONFIDENCE_THRESHOLD = confidence_threshold
+        self.SPEED_ATTENUATION_CONSTANT = speed_attenuation_constant
 
     def update_trackers_with_detections(self, detections):
         #detections are the center coordinates of the bounding boxes, confidences and the x,y,z coordinates of the person
@@ -38,12 +40,29 @@ class TrackerSupervisor:
         for tracker in self.object_trackers:
             if tracker not in matched_trackers:
                 if tracker.is_old():
+                    print(f"Tracker {tracker.TRACK_ID} is old and removed")
                     self.object_trackers.remove(tracker)
-                tracker.update_position_using_speed()
+
+                tracker.update_position_using_speed(attenuation_factor = self.SPEED_ATTENUATION_CONSTANT)
 
         for detection in detections:
             if detection not in matched_detections:
-                self.object_trackers.append(Tracker(track_id = len(self.object_trackers), max_age = self.MAX_AGE, px = detection["bbox_center"][0], py = detection["bbox_center"][1]))
+                tracker_ids = [tracker.TRACK_ID for tracker in self.object_trackers]
+
+                new_id = random.choice([i for i in range(1000) if i not in tracker_ids])
+                while new_id in tracker_ids:
+                    new_id = random.choice([i for i in range(1000) if i not in tracker_ids])
+
+                self.object_trackers.append(Tracker(track_id = new_id, max_age = self.MAX_AGE, px = detection["bbox_center"][0], py = detection["bbox_center"][1]))
+
+    def draw_trackers(self,frame):
+        for tracker in self.object_trackers:
+            tracker_name = f"ID: {tracker.TRACK_ID}"          
+            center_px= int(tracker.get_last_position()[0])
+            center_py= int(tracker.get_last_position()[1])
+
+            cv2.putText(frame, tracker_name, (center_px, center_py), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            cv2.circle(frame, (center_px, center_py), 4, (0, 255, 0), -1)          
 
 class Tracker:
     def __init__(self, track_id: int, max_age: int = None, px: int = None, py: int = None):        
@@ -58,9 +77,10 @@ class Tracker:
         return self.track_id
     
     def set_position(self, px: int, py: int) -> None:
+        print(f"Tracker {self.TRACK_ID} is updated with new position: {px}, {py}")
         self.age = 0
         self.last_position = self.current_position
-        self.current_position = (px, py)
+        self.current_position = [px, py]
         self.speed[0] = self.current_position[0] - self.last_position[0]
         self.speed[1] = self.current_position[1] - self.last_position[1]
 
@@ -69,6 +89,7 @@ class Tracker:
         self.last_position = self.current_position
         self.current_position[0] += self.speed[0]*attenuation_factor
         self.current_position[1] += self.speed[1]*attenuation_factor
+        print(f"Tracker {self.TRACK_ID} is updated with new position: {self.current_position[0]}, {self.current_position[1]} using speed data")
 
     def calculate_distance(self, px, py) -> float:
         return ((px - self.current_position[0])**2 + (py - self.current_position[1])**2)**0.5
@@ -77,7 +98,6 @@ class Tracker:
         return self.age > self.MAX_AGE    
 
     def get_last_position(self):
-        return self.positions[-1]
+        return self.current_position
+    
 
-    def get_positions(self):
-        return self.positions
