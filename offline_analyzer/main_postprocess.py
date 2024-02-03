@@ -24,12 +24,15 @@ pose_detection_model_path = input("Enter the path to the pose detection model: "
 pose_detector_object = detect_pose.poseDetector( model_path= pose_detection_model_path)
 
 #===========================DEFINE OBJECT TRACKER=================================
-object_tracker_object = object_tracker.TrackerSupervisor(max_age = 30, max_px_distance = 450, confidence_threshold = 0.5, speed_attenuation_constant = 0.1)
+object_tracker_object = object_tracker.TrackerSupervisor(max_age = 5, max_px_distance = 200, confidence_threshold = 0.5, speed_attenuation_constant = 1e-6)
 
 #========================DEFINE DATA EXPORTER-IMPORTER OBJECTS=================================
-csv_file_path = input("Enter the csv file path to import the results:")
+csv_file_path = input("Enter the csv file path to import the results: ")
 csv_importer = data_importer.dataImporter(file_path= csv_file_path)
 
+csv_export_folder = input("Enter the folder path to export the results: ")
+csv_export_name = input("Enter the file name to export the results: ")
+csv_exporter = data_exporter.dataExporter(folder_path= csv_export_folder, file_name_wo_extension= csv_export_name, export_extension= ".csv")
 
 #==============================IMPORT REGION================================
 region_file_path = input("Enter the path to the region file (JSON): ")
@@ -53,7 +56,7 @@ transformation_matrices = (A_MATRIX, C_MATRIX)
 
 #==============================ANALYZE VIDEO================================
 HALF_VIOLATION_TIME = 2.5 #seconds
-FRAME_STEP = 5
+FRAME_STEP = 1
 
 #====================================
 #improt restricted area violation seconds
@@ -87,6 +90,8 @@ print("Number of violation intervals: ", len(violation_intervals))
 
 #####
 #analyze the video for each violation interval for restricted area violation
+
+all_records = []
 for violation_interval in violation_intervals:
     object_tracker_object.clear_trackers()
     video_analyzer_object.set_current_seconds(violation_interval[0])
@@ -114,7 +119,8 @@ for violation_interval in violation_intervals:
                 }    
                 tracker_detections.append(tracker_dict)
 
-        object_tracker_object.update_trackers_with_detections(tracker_detections)
+        
+        object_tracker_object.update_trackers_with_detections(tracker_detections, timestamp = video_analyzer_object.get_current_seconds())
 
         #Informative part, no functional purpose================================
         pose_detector_object.draw_bounding_boxes( confidence_threshold = 0.1, add_blur = True, blur_kernel_size = 15)
@@ -128,7 +134,10 @@ for violation_interval in violation_intervals:
         print(f"{video_analyzer_object.get_current_seconds()}s : Frame {video_analyzer_object.get_current_frame_index()}/{video_analyzer_object.get_total_frames()} - {number_of_detections} detections")
 
         video_analyzer_object.fast_forward_frames(FRAME_STEP)
-
     
+    for track_record_id,track_records in object_tracker_object.get_tracker_records().items():
+        for track_record in track_records:
+            csv_exporter.export_to_csv(track_record)
+   
 
 exit()
