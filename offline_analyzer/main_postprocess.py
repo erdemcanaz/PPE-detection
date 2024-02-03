@@ -55,7 +55,7 @@ SIMPLE_HEIGHT_ALERT_HEIGHT = region_data["SIMPLE_HEIGHT_ALERT_HEIGHT"]
 transformation_matrices = (A_MATRIX, C_MATRIX)
 
 #==============================ANALYZE VIDEO================================
-HALF_VIOLATION_TIME = 2.5 #seconds
+HALF_VIOLATION_TIME = 5 #seconds
 FRAME_STEP = 1
 
 #====================================
@@ -92,7 +92,7 @@ print("Number of violation intervals: ", len(violation_intervals))
 #analyze the video for each violation interval for restricted area violation
 
 all_records = []
-for violation_interval in violation_intervals:
+for violation_index, violation_interval in enumerate(violation_intervals):
     object_tracker_object.clear_trackers()
     video_analyzer_object.set_current_seconds(violation_interval[0])
     while video_analyzer_object.get_current_seconds()< violation_interval[1]:
@@ -131,7 +131,7 @@ for violation_interval in violation_intervals:
         number_of_detections = len(pose_results["predictions"])        
         cv2.imshow("Frame", sampled_frame)
         cv2.waitKey(1)
-        print(f"{video_analyzer_object.get_current_seconds()}s : Frame {video_analyzer_object.get_current_frame_index()}/{video_analyzer_object.get_total_frames()} - {number_of_detections} detections")
+        print(f"{violation_index}/{len(violation_intervals)} | {video_analyzer_object.get_current_seconds()}s : Frame {video_analyzer_object.get_current_frame_index()}/{video_analyzer_object.get_total_frames()} - {number_of_detections} detections")
 
         video_analyzer_object.fast_forward_frames(FRAME_STEP)
     
