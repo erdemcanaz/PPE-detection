@@ -1,5 +1,10 @@
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import cv2
+import numpy as np
+from io import BytesIO
+import matplotlib
+
 
 def is_direct_passage(person_dict:dict, min_data_points: int, min_confidence: float, x_min_threshold:float, x_max_threshold:float):
     """
@@ -198,7 +203,7 @@ def calculate_direct_passage_likelyhood(person_dict:dict, min_data_points: int, 
         y_vals.append(person_track[1])
 
     return {
-        "ID":person_dict[0]['id'],
+        "id":person_dict[0]['id'],
         "likelihood":likelihood,
         "k":k,
         "x_vals":x_vals,
@@ -233,6 +238,45 @@ def plot_xy_tracking_results(x_vals :list, y_vals :list, title:str):
     plt.title(title)
     plt.show()
 
+def return_xy_tracking_results_frame(x_vals: list, y_vals: list, title: str):
+    x_lims = (0, 10)
+    y_lims = (0, 10)
+    # Load the background image
+    background_img = mpimg.imread('C:\\Users\\Levovo20x\\Documents\\GitHub\\PPE-detection\\secret_2D_maps\\koltuk_ambari_2_map_rotated.png')
+
+    # Create a figure and axis to plot onto
+    fig, ax = plt.subplots()
+
+    # Plot the background image
+    ax.imshow(background_img, extent=[0, 10, 0, 10])
+
+    # Add circle at the first node
+    ax.scatter(x_vals[0], y_vals[0], marker='o', color='r')
+
+    # Add cross at the last node
+    ax.scatter(x_vals[-1], y_vals[-1], marker='x', color='b')
+
+    # Set the x and y limits
+    ax.set_xlim(x_lims[0], x_lims[1])
+    ax.set_ylim(y_lims[0], y_lims[1])
+
+    # Plot the data points
+    ax.plot(x_vals, y_vals)
+    ax.set_title(title)
+
+    # Save the plot to a BytesIO buffer
+    buf = BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+
+    # Convert buffer to OpenCV image
+    img_buf_arr = np.frombuffer(buf.getvalue(), dtype=np.uint8)
+    img = cv2.imdecode(img_buf_arr, 1)
+
+    # Clean up the plt figure to prevent memory leak
+    plt.close(fig)
+
+    return img
 
 def apply_mean_filter(x_vals:list[float], window_size:int):
     # Calculate the half window size, for the number of elements on each side of the current element

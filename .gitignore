@@ -2,6 +2,7 @@
 *secret* 
 #ignore all files located at local folder
 *local/*
+*images/*
 
 *__pycache__
 
