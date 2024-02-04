@@ -146,39 +146,39 @@ def calculate_direct_passage_likelyhood(person_dict:dict, min_data_points: int, 
             continue
         if person_track[4] < min_confidence:
             continue
-        if person_track[0] > x_border+quarter_border_width:
+        if person_track[0] > x_border:
             starting_region = "right"
             break
-        elif person_track[0] < x_border-quarter_border_width:
+        elif person_track[0] < x_border:
             starting_region = "left"
             break
         else:
             continue
     
     ending_region = None
-    for person_track in person_track_list:
+    for person_track in reversed(person_track_list):
         if person_track[0] is None:
             continue
         if person_track[4] < min_confidence:
             continue
-        if person_track[0] > x_border+quarter_border_width:
+        if person_track[0] > x_border:
             ending_region = "right"
             break
-        elif person_track[0] < x_border-quarter_border_width:
+        elif person_track[0] < x_border:
             ending_region = "left"
             break
         else:
             continue
 
-    k = 0
+    k = 1
     if starting_region == "left" and ending_region == "right":
         k = 1
     elif starting_region == "right" and ending_region == "left":
         k = 1
     else:
-        k = 0.1
+        k = 0.25
 
-    likelyhood = likelyhood*k    
+    likelyhood = likelyhood*k
 
     print(f"\nID: {person_dict[0]['id']}  {start_time} - {end_time}")
     print(f"Likelyhood: {likelyhood} with k: {k}")
@@ -187,8 +187,54 @@ def calculate_direct_passage_likelyhood(person_dict:dict, min_data_points: int, 
     print(f"End time: {end_time}")
     print(f"Total points: {len(person_track_list)}")
 
+    #visualize moves 
+    x_vals = []
+    y_vals = []
+    for person_track in person_track_list:
+        if person_track[0] is None:
+            continue
+        if person_track[4] < min_confidence:
+            continue
+
+        x_vals.append(person_track[0])
+        y_vals.append(person_track[1])
+
+    import matplotlib.pyplot as plt
+    import matplotlib.image as mpimg
+
+    # Load the background image
+    background_img = mpimg.imread('C:\\Users\\Levovo20x\\Documents\\GitHub\\PPE-detection\\secret_2D_maps\\koltuk_ambari_2_map_rotated.png')
+
+    # Plot the background image
+    plt.imshow(background_img, extent=[0, 10, 0, 10])
+
+    # Add circle at the first node
+    plt.scatter(x_vals[0], y_vals[0], marker='o', color='r')
+
+    # Add cross at the last node
+    plt.scatter(x_vals[-1], y_vals[-1], marker='x', color='b')
+
+    # Set the x and y limits
+    plt.xlim(0, 11)
+    plt.ylim(0, 11)
+
+    # Plot the data points
+    plt.plot(x_vals, y_vals)
+
+    # Add vertical lines
+    # plt.axvline(x=x_border, color='g')
+    # plt.axvline(x=x_border+x_border_width/2, color='r')
+    # plt.axvline(x=x_border-x_border_width/2, color='r')
+    # plt.axvline(x=x_border+quarter_border_width, color='b')
+    # plt.axvline(x=x_border-quarter_border_width, color='b')
+
+    # Show the plot
+    plt.show()
+
     return likelyhood,k
 
+def plot_person_track(person_dict:dict, min_confidence: float):
+    
 
 def get_timestamp_of_a_record(record:dict)-> str:  
     format_to_hh_mm_ss = lambda seconds: f"{int(seconds//3600):02d}:{int((seconds%3600)//60):02d}:{int(seconds%60):02d}"

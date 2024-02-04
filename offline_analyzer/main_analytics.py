@@ -26,7 +26,7 @@ for tracking_dict in tracking_data:
 # Calculate likelihood for each person_id
 likelihoods = {}
 for person_id in tracked_persons:
-    likelihood, k = data_analyzer.calculate_direct_passage_likelyhood(person_dict=tracked_persons[person_id], min_data_points=5, min_confidence=0.3, x_border=7.5, x_border_width=2.5)
+    likelihood, k = data_analyzer.calculate_direct_passage_likelyhood(person_dict=tracked_persons[person_id], min_data_points=5, min_confidence=0.3, x_border=7.5, x_border_width=5)
     likelihoods[person_id] = likelihood
 
 # Sort the person_ids by their likelihood in descending order
@@ -38,4 +38,5 @@ print(sorted_person_ids)
 for person_id in sorted_person_ids:
     time_stamp = data_analyzer.get_timestamp_of_a_record(tracked_persons[person_id])
     print(f"{time_stamp} | Person ID: {person_id}  Likelihood: {likelihoods[person_id]}")
+
 
