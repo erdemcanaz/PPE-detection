@@ -37,7 +37,7 @@ for tracking_dict in tracking_data:
 
 k = 0
 for person_id in tracked_persons:
-    r = data_analyzer.is_direct_passage(tracked_persons[person_id], min_data_points= 5, min_confidence = 0.45,  x_min_threshold=8, x_max_threshold=9)
+    r = data_analyzer.is_direct_passage(tracked_persons[person_id], min_data_points= 5, min_confidence = 0.45,  x_min_threshold=7.75, x_max_threshold=8.75)
     if r:
         k+=1
 print(f"Total number of people who passed through the restricted area: {k}")

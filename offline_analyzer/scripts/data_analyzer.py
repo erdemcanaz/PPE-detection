@@ -7,7 +7,6 @@ def is_direct_passage(person_dict:dict, min_data_points: int, min_confidence: fl
 
     #sort the person_dict by timestamp
     person_tracking_data = sorted(person_dict, key = lambda x: float(x["timestamp"])) #list of dictionaries
-
     
     person_track_list = []
     for data_dict in person_tracking_data:
@@ -20,18 +19,51 @@ def is_direct_passage(person_dict:dict, min_data_points: int, min_confidence: fl
 
         person_track_list.append([person_x, person_y, person_z, state, confidence, timestamp ])
 
-
     #calculate number of points in the restricted area and the number of points outside the restricted area
     restricted_area_points = 0
     mid_area_points = 0
     outside_area_points = 0
+
+
+    starting_region = None
+    for person_track in person_track_list:
+        if person_track[0] is None:
+            continue
+        if person_track[4] < min_confidence:
+            continue
+        if person_track[0] > x_max_threshold:
+            starting_region = "right"
+            break
+        elif person_track[0] < x_min_threshold:
+            starting_region = "left"
+            break
+        else:
+            starting_region = "mid"
+            break
+    ending_region = None
+    for person_track in reversed(person_track_list):
+        if person_track[0] is None:
+            continue
+        if person_track[4] < min_confidence:
+            continue
+
+        if person_track[0] > x_max_threshold:
+            ending_region = "right"
+            break
+        elif person_track[0] < x_min_threshold:
+            ending_region = "left"
+            break
+        else:
+            ending_region = "mid"
+            break
+    
+    start_and_end = f"Start: {starting_region}, End: {ending_region}"
 
     for person_track in person_track_list:
         if person_track[0] is None:
             continue
         if person_track[4] < min_confidence:
             continue
-
 
         if person_track[0] > x_max_threshold:
             restricted_area_points += 1
@@ -46,9 +78,12 @@ def is_direct_passage(person_dict:dict, min_data_points: int, min_confidence: fl
 
     if restricted_area_points<=min_data_points or outside_area_points<=min_data_points or mid_area_points<=min_data_points:
         return False
-    print(f"Start time: {start_time}")
-    print(f"End time: {end_time}")
+    
     print(f"\nID: {person_dict[0]['id']}  {start_time} - {end_time}")
+    print(f"({(starting_region != ending_region)and(starting_region != 'mid' and ending_region != 'mid')})")
+    print(f"Start time: {start_time}")
+    print(f"Start and End: {start_and_end}")
+    print(f"End time: {end_time}")
     print(f"No of points in restricted area: {restricted_area_points}")
     print(f"No of points in mid area: {mid_area_points}")
     print(f"No of points outside restricted area: {outside_area_points}")
