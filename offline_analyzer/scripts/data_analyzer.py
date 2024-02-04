@@ -138,14 +138,56 @@ def calculate_direct_passage_likelyhood(person_dict:dict, min_data_points: int, 
 
     likelyhood = x_right*x_left
 
+
+    quarter_border_width = x_border_width/4
+    starting_region = None
+    for person_track in person_track_list:
+        if person_track[0] is None:
+            continue
+        if person_track[4] < min_confidence:
+            continue
+        if person_track[0] > x_border+quarter_border_width:
+            starting_region = "right"
+            break
+        elif person_track[0] < x_border-quarter_border_width:
+            starting_region = "left"
+            break
+        else:
+            continue
+    
+    ending_region = None
+    for person_track in person_track_list:
+        if person_track[0] is None:
+            continue
+        if person_track[4] < min_confidence:
+            continue
+        if person_track[0] > x_border+quarter_border_width:
+            ending_region = "right"
+            break
+        elif person_track[0] < x_border-quarter_border_width:
+            ending_region = "left"
+            break
+        else:
+            continue
+
+    k = 0
+    if starting_region == "left" and ending_region == "right":
+        k = 1
+    elif starting_region == "right" and ending_region == "left":
+        k = 1
+    else:
+        k = 0.1
+
+    likelyhood = likelyhood*k    
+
     print(f"\nID: {person_dict[0]['id']}  {start_time} - {end_time}")
-    print(f"Likelyhood: {likelyhood}")
+    print(f"Likelyhood: {likelyhood} with k: {k}")
     print(f"X_min: {x_min}, X_max: {x_max}")
     print(f"Start time: {start_time}")
     print(f"End time: {end_time}")
     print(f"Total points: {len(person_track_list)}")
 
-    return likelyhood
+    return likelyhood,k
 
 
 def get_timestamp_of_a_record(record:dict)-> str:  
