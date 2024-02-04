@@ -24,19 +24,34 @@ for tracking_dict in tracking_data:
     tracked_persons[person_id].append(tracking_dict)
 
 # Calculate likelihood for each person_id
-likelihoods = {}
+all_likelyhoods = []
 for person_id in tracked_persons:
-    likelihood, k = data_analyzer.calculate_direct_passage_likelyhood(person_dict=tracked_persons[person_id], min_data_points=5, min_confidence=0.3, x_border=7.5, x_border_width=5)
-    likelihoods[person_id] = likelihood
+    result_dict = data_analyzer.calculate_direct_passage_likelyhood(person_dict=tracked_persons[person_id], min_data_points=5, min_confidence=0.5, x_border=7.5, x_border_width=5)
+    all_likelyhoods.append(result_dict)
+#sort the person_dict by timestamp
+    
 
-# Sort the person_ids by their likelihood in descending order
-sorted_person_ids = sorted(likelihoods, key=likelihoods.get, reverse=True)
-
-print(sorted_person_ids)
+all_likelyhoods_sorted = sorted(all_likelyhoods, key=lambda x: x['likelihood'], reverse=True)
 
 # Print the sorted person_ids
-for person_id in sorted_person_ids:
-    time_stamp = data_analyzer.get_timestamp_of_a_record(tracked_persons[person_id])
-    print(f"{time_stamp} | Person ID: {person_id}  Likelihood: {likelihoods[person_id]}")
+for tracking_data in all_likelyhoods_sorted:
+    start_time = tracking_data["start_time"]
+    start_seconds = tracking_data["start_seconds"]
 
+    end_time = tracking_data["end_time"]
+    end_seconds = tracking_data["end_seconds"]
 
+    time_stamp = f"{start_time} - {end_time}"
+    likelihood = tracking_data["likelihood"]
+
+    window_size = max(5, len(tracking_data["x_vals"])//10)
+    x_vals = tracking_data["x_vals"]
+    x_vals_mean_filter = data_analyzer.apply_mean_filter(x_vals, window_size=5)
+
+    y_vals = tracking_data["y_vals"]
+    y_vals_mean_filter = data_analyzer.apply_mean_filter(y_vals, window_size=5)
+
+    print(f"{time_stamp} | Tracking ID: {person_id}  Likelihood: {likelihood}")
+
+    title = f"Tracking ID: {person_id} | Likelihood: {likelihood:.2f} | {time_stamp}"
+    data_analyzer.plot_xy_tracking_results(x_vals = x_vals_mean_filter, y_vals = y_vals_mean_filter, title=title)

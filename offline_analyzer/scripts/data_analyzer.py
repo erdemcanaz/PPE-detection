@@ -1,4 +1,5 @@
-
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
 def is_direct_passage(person_dict:dict, min_data_points: int, min_confidence: float, x_min_threshold:float, x_max_threshold:float):
     """
@@ -91,9 +92,6 @@ def is_direct_passage(person_dict:dict, min_data_points: int, min_confidence: fl
 
     return True
 
-
-
-
 def calculate_direct_passage_likelyhood(person_dict:dict, min_data_points: int, min_confidence: float, x_border:float, x_border_width:float)-> float:
     """
     This function checks if a person has directly passed through a restricted area
@@ -136,7 +134,7 @@ def calculate_direct_passage_likelyhood(person_dict:dict, min_data_points: int, 
     x_right = x_max - x_border
     x_left = x_border-x_min
 
-    likelyhood = x_right*x_left
+    likelihood = x_right*x_left
 
 
     quarter_border_width = x_border_width/4
@@ -176,12 +174,12 @@ def calculate_direct_passage_likelyhood(person_dict:dict, min_data_points: int, 
     elif starting_region == "right" and ending_region == "left":
         k = 1
     else:
-        k = 0.25
+        k = 0.5
 
-    likelyhood = likelyhood*k
+    likelihood = likelihood*k
 
     print(f"\nID: {person_dict[0]['id']}  {start_time} - {end_time}")
-    print(f"Likelyhood: {likelyhood} with k: {k}")
+    print(f"Likelyhood: {likelihood} with k: {k}")
     print(f"X_min: {x_min}, X_max: {x_max}")
     print(f"Start time: {start_time}")
     print(f"End time: {end_time}")
@@ -199,9 +197,21 @@ def calculate_direct_passage_likelyhood(person_dict:dict, min_data_points: int, 
         x_vals.append(person_track[0])
         y_vals.append(person_track[1])
 
-    import matplotlib.pyplot as plt
-    import matplotlib.image as mpimg
+    return {
+        "ID":person_dict[0]['id'],
+        "likelihood":likelihood,
+        "k":k,
+        "x_vals":x_vals,
+        "y_vals":y_vals,
+        "start_seconds":person_track_list[0][5],
+        "end_seconds":person_track_list[-1][5],
+        "start_time":start_time,
+        "end_time":end_time
+        }
 
+def plot_xy_tracking_results(x_vals :list, y_vals :list, title:str):   
+    x_lims = (0,10)
+    y_lims = (0,10)
     # Load the background image
     background_img = mpimg.imread('C:\\Users\\Levovo20x\\Documents\\GitHub\\PPE-detection\\secret_2D_maps\\koltuk_ambari_2_map_rotated.png')
 
@@ -215,37 +225,31 @@ def calculate_direct_passage_likelyhood(person_dict:dict, min_data_points: int, 
     plt.scatter(x_vals[-1], y_vals[-1], marker='x', color='b')
 
     # Set the x and y limits
-    plt.xlim(0, 11)
-    plt.ylim(0, 11)
+    plt.xlim(x_lims[0], x_lims[1])
+    plt.ylim(y_lims[0], y_lims[1])
 
     # Plot the data points
     plt.plot(x_vals, y_vals)
-
-    # Add vertical lines
-    # plt.axvline(x=x_border, color='g')
-    # plt.axvline(x=x_border+x_border_width/2, color='r')
-    # plt.axvline(x=x_border-x_border_width/2, color='r')
-    # plt.axvline(x=x_border+quarter_border_width, color='b')
-    # plt.axvline(x=x_border-quarter_border_width, color='b')
-
-    # Show the plot
+    plt.title(title)
     plt.show()
 
-    return likelyhood,k
 
-def plot_person_track(person_dict:dict, min_confidence: float):
+def apply_mean_filter(x_vals:list[float], window_size:int):
+    # Calculate the half window size, for the number of elements on each side of the current element
+    half_window = window_size // 2
     
-
-def get_timestamp_of_a_record(record:dict)-> str:  
-    format_to_hh_mm_ss = lambda seconds: f"{int(seconds//3600):02d}:{int((seconds%3600)//60):02d}:{int(seconds%60):02d}"
-
-    start_time = format_to_hh_mm_ss(float(record[0]["timestamp"]))
-    end_time = format_to_hh_mm_ss(float(record[-1]["timestamp"]))
-
-    start_end = f"{start_time} - {end_time}"    
-    return start_end
-
-
-
-
+    # Initialize the list for the filtered values
+    filtered_vals = []
+    
+    # Loop through each element in the list
+    for i in range(len(x_vals)):
+        # Determine the start and end of the window for the current element
+        start = max(0, i - half_window)
+        end = min(len(x_vals), i + half_window + 1)
+        
+        # Calculate the mean of the window and append to the filtered list
+        window_mean = sum(x_vals[start:end]) / (end - start)
+        filtered_vals.append(window_mean)
+    
+    return filtered_vals
 
