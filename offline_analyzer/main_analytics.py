@@ -16,28 +16,26 @@ csv_importer = data_importer.dataImporter(file_path= csv_file_path)
 tracking_data = csv_importer.import_csv_as_dict()
 
 
-tracked_persons = {}
-
-#### Tracking dict format: ##########
-#   'box_confidence': '0.8955957',
-#   'id': '217',
-#   'person_x': '4.775367312138306',
-#   'person_y': '2.728398447112553',
-#   'person_z': '1.190439820016809',
-#   'px': '662.0',
-#   'py': '429.5',
-#   'state': '1',
-#   'timestamp': '19938.941176470587'}
-
+tracked_persons = {} # a dict that the tracking id as key and all the related tracking data as value
 for tracking_dict in tracking_data:
     person_id = tracking_dict["id"]
     if person_id not in tracked_persons:
         tracked_persons[person_id] = []
     tracked_persons[person_id].append(tracking_dict)
 
-k = 0
+# Calculate likelihood for each person_id
+likelihoods = {}
 for person_id in tracked_persons:
-    r = data_analyzer.is_direct_passage(tracked_persons[person_id], min_data_points= 5, min_confidence = 0.45,  x_min_threshold=7.75, x_max_threshold=8.75)
-    if r:
-        k+=1
-print(f"Total number of people who passed through the restricted area: {k}")
+    likelihood = data_analyzer.calculate_direct_passage_likelyhood(person_dict=tracked_persons[person_id], min_data_points=5, min_confidence=0.5, x_border=8.25, x_border_width=1.75)
+    likelihoods[person_id] = likelihood
+
+# Sort the person_ids by their likelihood in descending order
+sorted_person_ids = sorted(likelihoods, key=likelihoods.get, reverse=True)
+
+print(sorted_person_ids)
+
+# Print the sorted person_ids
+for person_id in sorted_person_ids:
+    time_stamp = data_analyzer.get_timestamp_of_a_record(tracked_persons[person_id])
+    print(f"{time_stamp} | Person ID: {person_id}  Likelihood: {likelihoods[person_id]}")
+

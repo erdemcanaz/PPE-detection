@@ -92,3 +92,72 @@ def is_direct_passage(person_dict:dict, min_data_points: int, min_confidence: fl
     return True
 
 
+
+
+def calculate_direct_passage_likelyhood(person_dict:dict, min_data_points: int, min_confidence: float, x_border:float, x_border_width:float)-> float:
+    """
+    This function checks if a person has directly passed through a restricted area
+    """
+
+    #sort the person_dict by timestamp
+    person_tracking_data = sorted(person_dict, key = lambda x: float(x["timestamp"])) #list of dictionaries
+    
+    person_track_list = []
+    for data_dict in person_tracking_data:
+        confidence = float(data_dict["box_confidence"]) 
+        person_x = float(data_dict["person_x"]) if data_dict["person_x"] != "" else None
+        person_y = float(data_dict["person_y"]) if data_dict["person_y"] != "" else None
+        person_z = float(data_dict["person_z"]) if data_dict["person_z"] != "" else None
+        state = int(data_dict["state"])
+        timestamp = float(data_dict["timestamp"])
+
+        person_track_list.append([person_x, person_y, person_z, state, confidence, timestamp ])
+
+
+    x_max = -1e6 #a very small number
+    x_min = 1e6 #a very large number
+
+    for person_track in person_track_list:
+        if person_track[0] is None:
+            continue
+        if person_track[4] < min_confidence:
+            continue
+
+        x_max = max(x_max, person_track[0])
+        x_min = min(x_min, person_track[0])
+    
+    format_to_hh_mm_ss = lambda seconds: f"{int(seconds//3600):02d}:{int((seconds%3600)//60):02d}:{int(seconds%60):02d}"
+    start_time = format_to_hh_mm_ss(person_track_list[0][5])
+    end_time = format_to_hh_mm_ss(person_track_list[-1][5])
+
+    x_max = min(x_max, x_border+x_border_width)
+    x_min = max(x_min, x_border-x_border_width)
+
+    x_right = x_max - x_border
+    x_left = x_border-x_min
+
+    likelyhood = x_right*x_left
+
+    print(f"\nID: {person_dict[0]['id']}  {start_time} - {end_time}")
+    print(f"Likelyhood: {likelyhood}")
+    print(f"X_min: {x_min}, X_max: {x_max}")
+    print(f"Start time: {start_time}")
+    print(f"End time: {end_time}")
+    print(f"Total points: {len(person_track_list)}")
+
+    return likelyhood
+
+
+def get_timestamp_of_a_record(record:dict)-> str:  
+    format_to_hh_mm_ss = lambda seconds: f"{int(seconds//3600):02d}:{int((seconds%3600)//60):02d}:{int(seconds%60):02d}"
+
+    start_time = format_to_hh_mm_ss(float(record[0]["timestamp"]))
+    end_time = format_to_hh_mm_ss(float(record[-1]["timestamp"]))
+
+    start_end = f"{start_time} - {end_time}"    
+    return start_end
+
+
+
+
+
