@@ -23,8 +23,8 @@ video_analyzer_object.import_video(input_video_path, video_start_date = video_st
 pose_detection_model_path = input("Enter the path to the pose detection model: ")
 pose_detector_object = detect_pose.poseDetector( model_path= pose_detection_model_path)
 
-ppe_detection_model_path = input("Enter the path to the PPE detection model: ")
-ppe_detector_object = detect_ppe.ppeDetector( model_path= ppe_detection_model_path)
+# ppe_detection_model_path = input("Enter the path to the PPE detection model: ")
+# ppe_detector_object = detect_ppe.ppeDetector( model_path= ppe_detection_model_path)
 
 #==============================IMPORT REGION================================
 region_file_path = input("Enter the path to the region file (JSON): ")
@@ -52,42 +52,29 @@ sampling_interval_bounds = 0.5
 while video_analyzer_object.fast_forward_seconds(sampling_interval_bounds):
     sampled_frame = video_analyzer_object.get_current_frame()
 
-    pose_detector_object.predict_frame(frame = sampled_frame, h_angle= CAMERA_H_ANGLE, v_angle = CAMERA_V_ANGLE)
-    pose_detector_object.approximate_prediction_distance(box_condifence_threshold = 0.35, distance_threshold = 1, transformation_matrices = transformation_matrices)
-    pose_results = pose_detector_object.get_prediction_results()
+    # pose_detector_object.predict_frame(frame = sampled_frame, h_angle= CAMERA_H_ANGLE, v_angle = CAMERA_V_ANGLE)
+    # pose_detector_object.approximate_prediction_distance(box_condifence_threshold = 0.35, distance_threshold = 1, transformation_matrices = transformation_matrices)
+    # pose_results = pose_detector_object.get_prediction_results()
+
+    detect_ppe_v2.detect_ppe_v2(sampled_frame)   
+
 
     #pprint.pprint(pose_results)
     #Informative part, no functional purpose================================
     
-    #pose_detector_object.draw_keypoints_points(confidence_threshold = 0.25, DOT_SCALE_FACTOR = 3)
-    #pose_detector_object.draw_upper_body_lines(confidence_threshold = 0.1)    
+    # pose_detector_object.draw_keypoints_points(confidence_threshold = 0.25, DOT_SCALE_FACTOR = 3)
+    # pose_detector_object.draw_upper_body_lines(confidence_threshold = 0.1)    
     #pose_detector_object.draw_bounding_boxes( confidence_threshold = 0.1, add_blur = True, blur_kernel_size = 15)
     
     #for pose_prediction in pose_results["predictions"]:
 
     #ppe_detector_object.detect_and_update_frame(sampled_frame, conf_human = 0.2, conf_hardhat = 0.75)
 
-    number_of_detections = len(pose_results["predictions"])   
-
-    cv2.imshow("Frame", sampled_frame)  
-    if number_of_detections > 0:
-        ppe_detector_object.detect_and_update_frame(sampled_frame, conf_human = 0.2, conf_hardhat = 0.75)
-        key = cv2.waitKey(0)
-        if key == ord('q'):
-            break
+    #number_of_detections = len(pose_results["predictions"])   
    
-    # else:
-    #     key = cv2.waitKey(1)
-    #     if key == ord('q'):
-    #         break
-
-    # for pose_prediction in pose_results["predictions"]:
-    #     x1, y1, x2, y2 = pose_prediction["bbox"]
-    #     x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
-    #     frame_section = sampled_frame[y1:y2, x1:x2]
-    #     ppe_detector_object.detect_and_update_frame(frame_section, conf_human = 0.2, conf_hardhat = 0.75)
-
-    #     cv2.imshow("frame", frame_section)
-    #     cv2.waitKey(0)
+    cv2.imshow("Frame", sampled_frame)  
+    key = cv2.waitKey(1)
+    if key == ord('q'):
+        break
    
 cv2.destroyAllWindows()

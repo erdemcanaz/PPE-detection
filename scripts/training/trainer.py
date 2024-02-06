@@ -9,7 +9,8 @@ def main():
     #model = YOLO('yolov8n.yaml')
 
     # Option 2: Build from YAML and transfer pretrained weights
-    model = YOLO('yolov8n.yaml').load('C:\\Users\\Levovo20x\\Documents\\GitHub\\PPE-detection\\scripts\\training\\training_results\\yolo_m_640_600pic_regional_trial\\weights\\last.pt')
+    model_path_to_train_on = input("Enter the path to the model to train on: ")
+    model = YOLO('yolov8n.yaml').load(model_path_to_train_on)
 
     #model = YOLO('yolov8n.yaml')
 
@@ -34,13 +35,13 @@ def main():
 
     model.train(
         data=yaml_file,
-        classes = [0, 1],
-        epochs=300, 
+        classes = [1, 2],
+        epochs=150, 
         save_dir=save_dir,
         project=save_dir,
         name=experiment,
         imgsz=640,
-        save_period = 15,
+        save_period = 10,
         batch = 8,
         plots = True
     )
