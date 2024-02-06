@@ -5,7 +5,7 @@ import time
 from scipy.optimize import minimize
 import numpy as np
 
-class poseDetector():
+class poseDetector(): 
     KEYPOINT_NAMES = ["left_eye", "rigt_eye", "nose", "left_ear", "right_ear", "left_shoulder", "right_shoulder", "left_elbow" ,"right_elbow","left_wrist", "right_wrist", "left_hip", "right_hip", "left_knee", "right_knee", "left_ankle", "right_ankle"]
     
     #approximate distances between the keypoints of a person in meters
@@ -122,6 +122,10 @@ class poseDetector():
                 keypoint_conf = keypoint_confs[keypoint_index] 
                 keypoint_x = keypoints_xy[keypoint_index][0]
                 keypoint_y = keypoints_xy[keypoint_index][1]
+                if keypoint_x == 0 and keypoint_y == 0: #if the keypoint is not detected
+                    #But this is also a prediction. Thus the confidence should not be set to zero. negative values are used to indicate that the keypoint is not detected
+                    keypoint_conf = -keypoint_conf
+
                 x_angle = ((keypoint_x/frame_width)-0.5)*h_angle
                 y_angle = (0.5-(keypoint_y/frame_height))*v_angle
 
