@@ -1,4 +1,7 @@
+import cv2
+import base64
 import xml.etree.ElementTree as ET
+from io import BytesIO
 
 class ReportWriter:
     TEMPLATE_PATHS = {
@@ -7,6 +10,7 @@ class ReportWriter:
     COLOR_PALETTE = {
         "light_blue": "rgb(125, 206, 237)",
         "dark_blue": "rgb(0, 96, 169)",
+        "dark_blue_2": "rgb(0, 51, 204)",
         "black": "rgb(0, 0, 0)",
         "white": "rgb(255, 255, 255)"
     }
@@ -67,6 +71,61 @@ class ReportWriter:
         text_element.set('transform', f'rotate({-rotate_angle}, {x}, {y})')
         
         self.root.append(text_element)
+
+    def add_cv2_frame(self, frame, x, y):        
+        # Convert the frame to JPEG format in memory
+        is_success, buffer = cv2.imencode(".jpg", frame)
+        if not is_success:
+            print("Could not convert frame to JPEG format")
+            return
+
+        # Encode the JPEG image data to Base64
+        encoded_image = base64.b64encode(buffer).decode("utf-8")
+        
+        # Ensure the namespace for href is correctly used
+        nsmap = {'xlink': 'http://www.w3.org/1999/xlink'}
+        ET.register_namespace('xlink', nsmap['xlink'])
+
+        # Correctly set the href with namespace for the image element
+        image_attributes = {
+        'href': f"data:image/jpeg;base64,{encoded_image}",
+        'x': str(x),
+        'y': str(y),
+        'width': str(frame.shape[1]),
+        'height': str(frame.shape[0])
+        }
+        image_element = ET.SubElement(self.root, 'image', image_attributes)
+    
+    def add_image_file(self, image_path, x, y, width=None, height=None):
+        # Read the image file in binary mode
+        with open(image_path, 'rb') as image_file:
+            image_data = image_file.read()
+
+        # Encode the image data to Base64
+        encoded_image = base64.b64encode(image_data).decode('utf-8')
+
+        # Determine the image MIME type based on the file extension
+        # This is a simplistic approach; you might want to use a more robust method
+        # in production code.
+        mime_type = 'image/jpeg'  # Default to JPEG
+        if image_path.lower().endswith('.png'):
+            mime_type = 'image/png'
+        elif image_path.lower().endswith('.svg'):
+            mime_type = 'image/svg+xml'
+
+        # Create a new 'image' element for the SVG with the Base64-encoded data
+        image_attributes = {
+            'href': f"data:{mime_type};base64,{encoded_image}",
+            'x': str(x),
+            'y': str(y)
+        }
+
+        # If width and height are provided, set them
+        if width and height:
+            image_attributes['width'] = str(width)
+            image_attributes['height'] = str(height)
+
+        ET.SubElement(self.root, 'image', image_attributes)
 
     def export_modified_svg(self, output_file_name):
         (self.tree).write(output_file_name) # output_file_name = 'cover_page.svg'
