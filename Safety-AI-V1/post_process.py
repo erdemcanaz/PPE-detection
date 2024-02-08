@@ -109,7 +109,7 @@ def post_process(report_config:dict=None, pre_process_results:list[dict]=None, v
                 pose_detector_object.draw_upper_body_lines(confidence_threshold = 0.1)    
                 object_tracker_object.draw_trackers(sampled_frame)
 
-                cv2.imshow("Frame", sampled_frame)
+                cv2.imshow("Post-process - restricted area", sampled_frame)
                 cv2.waitKey(1)
 
             if report_config["verbose"]:
@@ -123,4 +123,20 @@ def post_process(report_config:dict=None, pre_process_results:list[dict]=None, v
     #==============================HARD HAT DETECTION===========================     
     hard_hat_csv_exporter_object = csv_exporter.CSV_Exporter(folder_path= report_config["new_folder_path_dynamic_key"], file_name_wo_extension= "post_process_hard_hat_results")
     hard_hat_detector_object = detect_hard_hat.hardHatDetector( model_path= report_config["hard_hat_detection_model_path"])
-    
+
+    for detection_index, detection_dict in enumerate(pre_process_results):
+        current_second = detection_dict["current_second"]
+        video_analyzer_object.set_current_seconds(current_second)
+        sampled_frame = video_analyzer_object.get_current_frame()
+
+        hard_hat_detector_object.predict_frame(sampled_frame)
+        results = hard_hat_detector_object.get_prediction_results()
+       
+        if report_config["verbose"]:
+            print(f"{detection_index+1}/{len(pre_process_results)} | {current_second:.2f}s - {len(results['predictions'])} hard-hat related detections")
+       
+        if report_config["show_video"]:
+            hard_hat_detector_object.draw_predictions()
+            cv2.imshow("Post-process - hard hat", sampled_frame)
+            cv2.waitKey(100)
+        

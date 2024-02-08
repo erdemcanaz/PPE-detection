@@ -93,9 +93,7 @@ class poseDetector():
         self.prediction_results["speed_results"] = results.speed # {'preprocess': None, 'inference': None, 'postprocess': None}
         self.prediction_results["time_stamp"] = time.time()
        
-        self.prediction_results["predictions"] = []
         for i, result in enumerate(results):
-            #result corresponds to one of the predicted boxes. 
             boxes = result.boxes  # Boxes object for bbox outputs 
 
             box_cls_no = int(boxes.cls.cpu().numpy()[0])
