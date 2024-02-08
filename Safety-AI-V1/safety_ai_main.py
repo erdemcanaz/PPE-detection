@@ -28,6 +28,7 @@ csv_exporter_object, video_analyzer_object, pre_process_results, REGION_DATA, tr
 #POST-PROCESSING
 from post_process import post_process
 post_process(
+    pre_process_results = pre_process_results,
     report_config = report_config, 
     video_analyzer_object = video_analyzer_object,
     csv_exporter_object = csv_exporter_object,

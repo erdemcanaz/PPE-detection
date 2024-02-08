@@ -1,4 +1,4 @@
-import json
+import json,pprint
 import cv2
 import scripts.video_analyzer as video_analyzer
 import scripts.detect_pose as detect_pose
@@ -7,66 +7,37 @@ import scripts.object_tracker as object_tracker
 
 
 
-def post_process(report_config:dict=None, video_analyzer_object:video_analyzer=None, pose_detector_object:detect_pose=None, csv_exporter_object:csv_exporter=None, transformation_matrices:tuple=None, REGION_DATA:dict=None):
+def post_process(report_config:dict=None, pre_process_results:list[dict]=None, video_analyzer_object:video_analyzer=None, pose_detector_object:detect_pose=None, csv_exporter_object:csv_exporter=None, transformation_matrices:tuple=None, REGION_DATA:dict=None):
     #==============================INITIALIZE OBJECTS AND CONFIGS===========================
     pose_detector_object = detect_pose.poseDetector( model_path= report_config["post_pose_detection_model_path"])
     object_tracker_object = object_tracker.TrackerSupervisor(max_age = 5, max_px_distance = 200, confidence_threshold = 0.5, speed_attenuation_constant = 1e-6)
+    
+    r_x1,r_y1,r_x2,r_y2 = REGION_DATA["RESTRICTED_AREA_COORDINATES"]
 
+    violation_seconds = []
+    for detection_dict in pre_process_results:
+        if detection_dict["is_coordinated_wrt_world_frame"] == True:
+            person_x = float(detection_dict["person_x"])
+            person_y = float(detection_dict["person_y"])
 
+            if r_x1 < person_x < r_x2 and r_y1 < person_y < r_y2:
+                violation_seconds.append(detection_dict["current_second"])
 
-# #==============================IMPORT REGION================================
-# region_file_path = input("Enter the path to the region file (JSON): ")
-# region_data = None
-# with open(region_file_path, 'r') as file:
-#     region_data = json.load(file)
+    #for each violation, create an interval of HALF_VIOLATION_TIME seconds before and after the violation
+    violation_intervals = []
+    for violation_second in violation_seconds:
+        should_add_interval = True
+        for violation_interval in violation_intervals:
+            if violation_interval[0] < violation_second and violation_second < violation_interval[1]:
+                violation_interval[0] = min(violation_interval[0], violation_second - report_config["half_violation_time"])
+                violation_interval[1] = max(violation_interval[1], violation_second + report_config["half_violation_time"])
+                should_add_interval = False
+                break
+        if should_add_interval:
+            violation_intervals.append([violation_second - report_config["half_violation_time"], violation_second + report_config["half_violation_time"]])
 
-# REGION_NAME = region_data['REGION_NAME']
-# CAMERA_H_ANGLE = region_data['CAMERA_H_VIEW_ANGLE']
-# CAMERA_V_ANGLE = region_data['CAMERA_V_VIEW_ANGLE']
-# A_MATRIX = region_data['CAMERA_A_MATRIX']
-# C_MATRIX = region_data['CAMERA_C_MATRIX']
-
-# IS_RESTRICTED_AREA_APPLIED = region_data["RULES_APPLIED"]["RESTRICTED_AREA"]
-# RESTRICTED_REGIONS = region_data["RESTRICTED_AREA_COORDINATES"] 
-
-# IS_SIMPLE_HEIGHT_ALERT_APPLIED = region_data["RULES_APPLIED"]["SIMPLE_HEIGHT_ALERT"]
-# SIMPLE_HEIGHT_ALERT_HEIGHT = region_data["SIMPLE_HEIGHT_ALERT_HEIGHT"]
-
-# transformation_matrices = (A_MATRIX, C_MATRIX)
-
-# #==============================ANALYZE VIDEO================================
-# HALF_VIOLATION_TIME = 5 #seconds
-# FRAME_STEP = 1
-
-# #====================================
-# #improt restricted area violation seconds
-
-# violation_seconds = []
-
-# detection_data = csv_importer.import_csv_as_dict()
-# for detection_dict in detection_data:
-#     if detection_dict["restricted_area_violation"] != "violated":
-#         continue
-#     else:
-#         video_time = detection_dict["video_time"].split(":")
-#         video_seconds = int(video_time[0])*3600 + int(video_time[1])*60 + int(video_time[2])
-#         violation_seconds.append(video_seconds)
-
-# #####
-# #for each violation, create an interval of HALF_VIOLATION_TIME seconds before and after the violation
-# violation_intervals = []
-# for violation_second in violation_seconds:
-#     should_add_interval = True
-#     for violation_interval in violation_intervals:
-#         if violation_interval[0] < violation_second and violation_second < violation_interval[1]:
-#             violation_interval[0] = min(violation_interval[0], violation_second - HALF_VIOLATION_TIME)
-#             violation_interval[1] = max(violation_interval[1], violation_second + HALF_VIOLATION_TIME)
-#             should_add_interval = False
-#             break
-#     if should_add_interval:
-#         violation_intervals.append([violation_second - HALF_VIOLATION_TIME, violation_second + HALF_VIOLATION_TIME])
-
-# print("Number of violation intervals: ", len(violation_intervals))
+            
+          
 
 # #####
 # #analyze the video for each violation interval for restricted area violation
