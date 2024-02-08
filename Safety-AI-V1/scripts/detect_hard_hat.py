@@ -40,7 +40,7 @@ class hardHatDetector:
                     "class_name":"NoName",
                     "bbox_confidence":0,
                     "bbox": [0,0,0,0], # Bounding box in the format [x1,y1,x2,y2]
-                    "bbox_pixel_area": 0,
+                    "bbox_area": 0,
                     "bbox_area_normalized": 0,
                     "is_hard_hat_present": False,
             }
