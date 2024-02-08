@@ -68,12 +68,12 @@ class hardHatDetector:
             bbox_pixel_area = (box_xyxy[2]-box_xyxy[0])*(box_xyxy[3]-box_xyxy[1])
 
             result_detection_dict = self._PREDICTION_DICT_TEMPLATE()
-            result_detection_dict ["class_index"] = box_cls_no
-            result_detection_dict ["class_name"] = box_cls_name
-            result_detection_dict ["bbox_confidence"] = box_conf
-            result_detection_dict ["bbox"] = box_xyxy # Bounding box in the format [x1,y1,x2,y2]
-            result_detection_dict ["bbox_pixel_area"] = bbox_pixel_area
-
+            result_detection_dict["class_index"] = box_cls_no
+            result_detection_dict["class_name"] = box_cls_name
+            result_detection_dict["bbox_confidence"] = box_conf
+            result_detection_dict["bbox"] = box_xyxy # Bounding box in the format [x1,y1,x2,y2]
+            result_detection_dict["bbox_pixel_area"] = bbox_pixel_area
+            
             self.prediction_results["predictions"].append(result_detection_dict)
     
     def get_prediction_results(self):

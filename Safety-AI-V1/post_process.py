@@ -146,17 +146,19 @@ def post_process(report_config:dict=None, pre_process_results:list[dict]=None, v
                 "video_time": video_analyzer_object.get_str_current_video_time(),
                 "prediction_no": prediction_no,
 
+                "class_name":hard_hat_result["class_name"],
                 "hard_hat_bbox":[h_x1,h_y1,h_x2,h_y2],
                 "hard_hat_prediction_confidence": hard_hat_result["bbox_confidence"],
                 "hard_hat_bbox_pixel_area":hard_hat_result["bbox_area"],
                 "hard_hat_bbox_area_normalized": f"{video_analyzer_object.normalize_area(hard_hat_result['bbox_pixel_area']):0.4f}",
                 "is_hard_hat_present":hard_hat_result["is_hard_hat_present"]
+
             }    
          
             hard_hat_csv_exporter_object.append_row(hard_hat_dict)
 
         if report_config["verbose"]:
-            print(f"{detection_index+1}/{len(pre_process_results)} | {current_second:.2f}s - {len(hard_hat_results['predictions'])} hard-hat related detections")
+            print(f"{detection_index+1}/{len(pre_process_results)} | {video_analyzer_object.get_str_current_video_time()}s - {len(hard_hat_results['predictions'])} hard-hat related detections")
        
         if report_config["show_video"]:
             hard_hat_detector_object.draw_predictions()

@@ -47,7 +47,7 @@ def pre_process(video_analyzer_object:video_analyzer=None, report_config:dict=No
             sampling_interval = sampling_interval_bounds[0]
             if current_second > sampling_interval:
                 video_analyzer_object.fast_backward_seconds(min(sampling_interval, current_second))
-                print(f"A person is detected at {current_second:.2f} seconds.")
+                print(f"A person is detected at {video_analyzer_object.get_str_current_video_time()}.")
         else:
             sampling_interval = min(sampling_interval + interval_increment, sampling_interval_bounds[1])
 
@@ -101,7 +101,7 @@ def pre_process(video_analyzer_object:video_analyzer=None, report_config:dict=No
                 progress_percentage = (video_analyzer_object.get_current_seconds()-start_time_seconds)/(end_time_seconds-start_time_seconds)*100
                 print(f"(%{progress_percentage:.2f}) Int: {sampling_interval:0.2f}s : - {number_of_detections} detections")
             else:
-                print(f"(%{100*frame_index_now/total_frame_count:.2f}) Int: {sampling_interval:0.2f}s : - {number_of_detections} detections")
+                print(f"(%{100*frame_index_now/total_frame_count:.2f}) {video_analyzer_object.get_str_current_video_time()} Interval: {sampling_interval:0.2f}s : - {number_of_detections} detections")
 
         if report_config["show_video"]:        
             pose_detector_object.draw_bounding_boxes( confidence_threshold = 0.1, add_blur = report_config["apply_video_blur"], blur_kernel_size = report_config["video_blur_kernel_size"])
