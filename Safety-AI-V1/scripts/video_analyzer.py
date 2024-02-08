@@ -182,3 +182,9 @@ class videoAnalyzer:
             print("End of video")
         
         self.video_capture_object.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_index)
+
+    def normalize_x_y(self, x: int, y: int) -> tuple:
+        return (x/self.FRAME_WIDTH, y/self.FRAME_HEIGHT)
+    
+    def normalize_area(self, A:float)->float:
+        return A/(self.FRAME_WIDTH*self.FRAME_HEIGHT)
