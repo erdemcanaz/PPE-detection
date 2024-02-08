@@ -1,6 +1,8 @@
 regional_infos/*
 svg_templates/*
-report_formatting_data.json
+*.json
 videos/*
 results/*
+yolo_models/*
+
 
