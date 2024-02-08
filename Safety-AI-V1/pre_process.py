@@ -68,7 +68,8 @@ def pre_process(video_analyzer_object:video_analyzer=None, report_config:dict=No
                 "video_duration_seconds": video_analyzer_object.get_video_duration_in_seconds(),
                 "current_second": video_analyzer_object.get_current_seconds(),
 
-                "bbox_coordinates": f"top_left:{x1},{y1} bottom_right:{x2},{y2}",
+                "bbox_coordinates": [x1,y1,x2,y2],
+                "bbox_coordinates_str": f"top_left: {x1}, {y1} bottom_right: {x2}, {y2}",
                 "box_coordinates_normalized": f"top_left:{video_analyzer_object.normalize_x_y(x1,y1)} bottom_right:{video_analyzer_object.normalize_x_y(x2,y2)}",
                 "bbox_area":int(pose_result["bbox_pixel_area"]),
                 "bbox_area_normalized":f"{video_analyzer_object.normalize_area(pose_result['bbox_pixel_area']):0.4f}",
@@ -85,7 +86,7 @@ def pre_process(video_analyzer_object:video_analyzer=None, report_config:dict=No
                 "person_y": f"{person_y:.3f}",
                 "person_z": f"{person_z:.3f}",
 
-                "track_id":"None"
+                "tracker_id":"None"
             }   
             
             pre_process_results.append(detection_info)
@@ -110,7 +111,7 @@ def pre_process(video_analyzer_object:video_analyzer=None, report_config:dict=No
             cv2.waitKey(1)
 
     cv2.destroyAllWindows()
-    return csv_exporter_object, video_analyzer_object, pre_process_results, REGION_DATA, transformation_matrices
+    return video_analyzer_object, pre_process_results, REGION_DATA, transformation_matrices
 
 
 

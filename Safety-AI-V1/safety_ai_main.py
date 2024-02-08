@@ -23,7 +23,7 @@ video_analyzer_object.import_video(report_config["video_path"], video_start_date
 
 #PRE-PROCESSING
 from pre_process import pre_process
-csv_exporter_object, video_analyzer_object, pre_process_results, REGION_DATA, transformation_matrices = pre_process(video_analyzer_object, report_config)
+video_analyzer_object, pre_process_results, REGION_DATA, transformation_matrices = pre_process(video_analyzer_object, report_config)
 
 #POST-PROCESSING
 from post_process import post_process
@@ -31,7 +31,6 @@ post_process(
     pre_process_results = pre_process_results,
     report_config = report_config, 
     video_analyzer_object = video_analyzer_object,
-    csv_exporter_object = csv_exporter_object,
     REGION_DATA = REGION_DATA,
     transformation_matrices = transformation_matrices,
 )
