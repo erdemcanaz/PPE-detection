@@ -1,10 +1,8 @@
+#INITIALIZATION
 import json, os
-
-report_config = json.load(open('json/report_config.json', 'r'))
-
-#PRE-PROCESSING
 import scripts.video_analyzer as video_analyzer
 from datetime import datetime, timedelta, timezone
+report_config = json.load(open('json/report_config.json', 'r'))
 
 # Create a new folder to export the report and other related files. Note that it is created with a timestamp to avoid overwriting
 new_folder_path = report_config["folder_to_export"] + datetime.now().strftime("_%Y_%m_%d_%H-%M-%S")
@@ -23,5 +21,16 @@ video_start_date = datetime(
     )
 video_analyzer_object.import_video(report_config["video_path"], video_start_date = video_start_date)
 
+#PRE-PROCESSING
 from pre_process import pre_process
-csv_exporter_object, video_analyzer_object, pre_process_results = pre_process(video_analyzer_object, report_config)
+csv_exporter_object, video_analyzer_object, pre_process_results, REGION_DATA, transformation_matrices = pre_process(video_analyzer_object, report_config)
+
+#POST-PROCESSING
+from post_process import post_process
+post_process(
+    report_config = report_config, 
+    video_analyzer_object = video_analyzer_object,
+    csv_exporter_object = csv_exporter_object,
+    REGION_DATA = REGION_DATA,
+    transformation_matrices = transformation_matrices,
+)
