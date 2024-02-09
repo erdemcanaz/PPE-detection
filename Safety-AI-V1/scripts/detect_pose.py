@@ -131,7 +131,7 @@ class poseDetector():
 
             self.prediction_results["predictions"].append(result_detection_dict)
 
-    def approximate_prediction_distance(self, box_condifence_threshold = 0.25, distance_threshold = 1, transformation_matrices = None):
+    def approximate_prediction_distance(self, box_condifence_threshold = 0.25, distance_threshold = 1, shoulders_confidence_threshold = 0.75, transformation_matrices = None):
         """
         Calculates the distances between the camera and each detected person. if shoulders and hips are detected
 
@@ -148,6 +148,10 @@ class poseDetector():
             ls_data = result["keypoints"]["left_shoulder"]
             rh_data = result["keypoints"]["right_hip"]
             lh_data = result["keypoints"]["left_hip"]
+
+            if rs_data[2] < shoulders_confidence_threshold or ls_data[2] < shoulders_confidence_threshold:
+                #to calculate distance, it is necessary to have the two shoulder keypoints by this algorithm
+                continue
 
             f_get_unit_vector = lambda angle_x, angle_y: [math.cos(math.radians(angle_y))*math.sin(math.radians(angle_x)), math.sin(math.radians(angle_y)), math.cos(math.radians(angle_y))* math.cos(math.radians(angle_x))]            
          
@@ -189,15 +193,15 @@ class poseDetector():
             unit_vectors = [rs_uv, ls_uv, rh_uv, lh_uv]
             #NOTE: never remove comma after unit_vectors. Othewise it will be interpreted as a tuple
             minimizer_result = minimize(minimizer_function, initial_guess, args=( unit_vectors, ), method='L-BFGS-B', tol=tolerance, bounds = bounds)
-            
-            if minimizer_result.success == True:
 
+            if minimizer_result.success == True:
                 # k_rs, k_ls, k_rh, k_lh = unknowns
                 scalars = minimizer_result.x
                 v_rs = [rs_uv[0]*scalars[0], rs_uv[1]*scalars[0], rs_uv[2]*scalars[0]]
                 v_ls = [ls_uv[0]*scalars[1], ls_uv[1]*scalars[1], ls_uv[2]*scalars[1]]
                 v_rh = [rh_uv[0]*scalars[2], rh_uv[1]*scalars[2], rh_uv[2]*scalars[2]]
                 v_lh = [lh_uv[0]*scalars[3], lh_uv[1]*scalars[3], lh_uv[2]*scalars[3]]
+
 
                 v_belly = [(v_rs[0]+v_ls[0]+v_rh[0]+v_lh[0])/4, (v_rs[1]+v_ls[1]+v_rh[1]+v_lh[1])/4, (v_rs[2]+v_ls[2]+v_rh[2]+v_lh[2])/4]
                 d_belly = math.sqrt(v_belly[0]**2 + v_belly[1]**2 + v_belly[2]**2)
@@ -211,9 +215,9 @@ class poseDetector():
 
 
                 if d_belly > distance_threshold:
+                    result["is_coordinated_wrt_camera"] = True       
                     result["belly_coordinate_wrt_camera"] = v_belly
                     result["belly_distance_wrt_camera"] = d_belly
-                    result["is_coordinated_wrt_camera"] = True       
 
                     world_coordinate = np.linalg.pinv(A) @ (v_belly - C)
                     result["belly_coordinate_wrt_world_frame"] = world_coordinate

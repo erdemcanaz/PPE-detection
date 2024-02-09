@@ -9,10 +9,11 @@ import scripts.object_tracker as object_tracker
 
 
 def post_process_restriced_area(report_config: dict = None, pre_process_results: list[dict] = None, video_analyzer_object: video_analyzer = None):
-
     tracking_csv_exporter_object = csv_exporter.CSV_Exporter(folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="post_process_tracking_results")
+    tracking_sorted_csv_exporter_object = csv_exporter.CSV_Exporter(folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="sorted_post_process_tracking_results")
+
     pose_detector_object = detect_pose.poseDetector(model_path=report_config["post_pose_detection_model_path"])
-    object_tracker_object = object_tracker.TrackerSupervisor(max_age=5, max_px_distance=200, confidence_threshold=0.5)
+    object_tracker_object = object_tracker.TrackerSupervisor(max_age=50, max_px_distance=200, confidence_threshold=0.5)
 
     REGION_DATA = None
     with open(report_config["region_info_path"], 'r') as file:
@@ -46,15 +47,15 @@ def post_process_restriced_area(report_config: dict = None, pre_process_results:
                                        violation_second + report_config["half_violation_time"]])
 
     all_rows = []
+    all_trackings = {}
     for violation_index, violation_interval in enumerate(violation_intervals):
         object_tracker_object.clear_trackers()
         video_analyzer_object.set_current_seconds(violation_interval[0])
         while video_analyzer_object.get_current_seconds() < violation_interval[1]:
             sampled_frame = video_analyzer_object.get_current_frame()
-            pose_detector_object.predict_frame(
-                frame=sampled_frame, h_angle=REGION_DATA["CAMERA_H_VIEW_ANGLE"], v_angle=REGION_DATA["CAMERA_V_VIEW_ANGLE"])
-            pose_detector_object.approximate_prediction_distance(
-                box_condifence_threshold=0.20, distance_threshold=1, transformation_matrices=transformation_matrices)
+
+            pose_detector_object.predict_frame(frame=sampled_frame, h_angle=REGION_DATA["CAMERA_H_VIEW_ANGLE"], v_angle=REGION_DATA["CAMERA_V_VIEW_ANGLE"])
+            pose_detector_object.approximate_prediction_distance( box_condifence_threshold=0.20, distance_threshold=1, shoulders_confidence_threshold= 0.85, transformation_matrices=transformation_matrices)
             pose_results = pose_detector_object.get_prediction_results()
 
             tracker_detections = []
@@ -94,20 +95,16 @@ def post_process_restriced_area(report_config: dict = None, pre_process_results:
 
                         "tracker_id": "None"
                     }
-                    tracker_detections.append(tracker_dict)
+                    tracker_detections.append(tracker_dict)                                    
 
             # iterate through all human detections and update the trackers
-            object_tracker_object.update_trackers_with_detections(
-                detections=tracker_detections)
+            object_tracker_object.update_trackers_with_detections(detections=tracker_detections)
 
             # informative part, no functional purpose================================
             if report_config["show_video"]:
-                pose_detector_object.draw_bounding_boxes(
-                    confidence_threshold=0.1, add_blur=True, blur_kernel_size=15)
-                pose_detector_object.draw_keypoints_points(
-                    confidence_threshold=0.25, DOT_SCALE_FACTOR=1)
-                pose_detector_object.draw_upper_body_lines(
-                    confidence_threshold=0.1)
+                pose_detector_object.draw_bounding_boxes( confidence_threshold=0.1, add_blur=True, blur_kernel_size=15)
+                pose_detector_object.draw_keypoints_points( confidence_threshold=0.25, DOT_SCALE_FACTOR=1)
+                pose_detector_object.draw_upper_body_lines( confidence_threshold=0.1)
                 object_tracker_object.draw_trackers(sampled_frame)
 
                 cv2.imshow("Post-process - restricted area", sampled_frame)
@@ -122,14 +119,58 @@ def post_process_restriced_area(report_config: dict = None, pre_process_results:
 
         # all violation period is analyzed. Now, we can append the records to the csv file and continue with next interval
         for track_record_id, tracking_record in object_tracker_object.get_tracker_records().items():
+            all_trackings[track_record_id] = tracking_record
             for track_record in tracking_record:
                 all_rows.append(track_record)
                 tracking_csv_exporter_object.append_row(track_record)
-                
+    cv2.destroyAllWindows()
+
+    #sort according to the violation score (not calculated yet) 
+    
+    X_MIN = REGION_DATA["X_LINES"]["x_min"]
+    X_THRESHOLD = REGION_DATA["X_LINES"]["x_threshold"]
+    X_MAX = REGION_DATA["X_LINES"]["x_max"]   
+
+    sorted_tracks = []
+    for track_record_id, tracking_record in all_trackings.items():
+        left_side_max_point = 0 # (x_threshold - {x})*bbox_conf where x < x_threshold
+        right_side_max_point = 0 # ({x} - x_threshold)*bbox_conf where x > x_threshold
+        for track_record in tracking_record:
+            bbox_conf = float(track_record["bbox_confidence"])
+            person_x = float(track_record["person_x"])
+
+            if person_x < X_THRESHOLD:
+                person_x = max(person_x, X_MIN)
+                right_side_point = bbox_conf*((X_THRESHOLD - person_x)/(X_THRESHOLD-X_MIN))
+                right_side_max_point = max(right_side_max_point, right_side_point)
+
+            else:
+                person_x = min(person_x, X_MAX)
+                left_side_point = bbox_conf*((person_x - X_THRESHOLD)/(X_MAX-X_THRESHOLD))
+                left_side_max_point = max(left_side_max_point, left_side_point)
+
+        track_violation_score = left_side_max_point*right_side_max_point # between 0 and 1
+        print(f"score:{track_violation_score } | left_side_max_point: {left_side_max_point:.2f} | right_side_max_point: {right_side_max_point:.2f}")
+
+        sorted_track_dict = {
+            "track_id": track_record_id,
+            "violation_score": track_violation_score,
+            "first_frame_index": tracking_record[0]["current_frame_index"],
+            "first_frame_time": tracking_record[0]["video_time"],
+            "first_frame_date": tracking_record[0]["date"],
+            "last_frame_index": tracking_record[-1]["current_frame_index"],
+            "last_frame_time": tracking_record[-1]["video_time"],
+        }
+        sorted_tracks.append(sorted_track_dict)
+    sorted_tracks = sorted(sorted_tracks, key=lambda x: x['violation_score'], reverse=True)
+    for row in sorted_tracks:
+        tracking_sorted_csv_exporter_object.append_row(row)
+
     return all_rows
 
 def post_process_hard_hat(report_config: dict = None, pre_process_results: list[dict] = None, video_analyzer_object: video_analyzer = None):
     hard_hat_csv_exporter_object = csv_exporter.CSV_Exporter( folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="post_process_safety_equipment_results")
+    hard_hat_sorted_csv_exporter_object = csv_exporter.CSV_Exporter( folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="sorted_post_process_safety_equipment_results")
     hard_hat_detector_object = detect_safety_equipment.safetyEquipmentDetector(model_path=report_config["hard_hat_detection_model_path"])
 
     #get the frames when a person(s) is detected
@@ -226,7 +267,12 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
         if report_config["show_video"]:
             hard_hat_detector_object.draw_predictions()
             cv2.imshow("Post-process - safety equipment (hard hat)", sampled_frame)
-            cv2.waitKey(250)
+            cv2.waitKey(250)    
+    cv2.destroyAllWindows()
+
+    all_rows_sorted = sorted(all_rows, key=lambda x: x['violation_score'], reverse=True)
+    for row in all_rows_sorted:
+        hard_hat_sorted_csv_exporter_object.append_row(row)
 
     return all_rows
 

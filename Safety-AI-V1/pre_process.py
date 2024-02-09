@@ -22,9 +22,7 @@ def pre_process(video_analyzer_object: video_analyzer = None, report_config: dic
         REGION_DATA['CAMERA_A_MATRIX'], REGION_DATA['CAMERA_C_MATRIX'])
 
     # ==============================ANALYZE VIDEO================================
-    sampling_interval_bounds = (
-        report_config["sampling_interval_bounds"][0], report_config["sampling_interval_bounds"][1])  # seconds
-    # seconds
+    sampling_interval_bounds = (report_config["sampling_interval_bounds"][0], report_config["sampling_interval_bounds"][1]) # seconds
     interval_increment = report_config["sampling_interval_increment"]
     sampling_interval = sampling_interval_bounds[0]
 
@@ -45,10 +43,8 @@ def pre_process(video_analyzer_object: video_analyzer = None, report_config: dic
 
         sampled_frame = video_analyzer_object.get_current_frame()
 
-        pose_detector_object.predict_frame(
-            frame=sampled_frame, h_angle=REGION_DATA['CAMERA_H_VIEW_ANGLE'], v_angle=REGION_DATA['CAMERA_V_VIEW_ANGLE'])
-        pose_detector_object.approximate_prediction_distance(
-            box_condifence_threshold=0.20, distance_threshold=1, transformation_matrices=transformation_matrices)
+        pose_detector_object.predict_frame(frame=sampled_frame, h_angle=REGION_DATA['CAMERA_H_VIEW_ANGLE'], v_angle=REGION_DATA['CAMERA_V_VIEW_ANGLE'])
+        pose_detector_object.approximate_prediction_distance(box_condifence_threshold=0.20, distance_threshold=1, shoulders_confidence_threshold= 0.75, transformation_matrices=transformation_matrices)
         pose_results = pose_detector_object.get_prediction_results()
 
         # Adjust sampling interval
@@ -61,8 +57,7 @@ def pre_process(video_analyzer_object: video_analyzer = None, report_config: dic
                 print(f"A person is detected at {video_analyzer_object.get_str_current_video_time()}.")
                 continue
         else:
-            sampling_interval = min(
-                sampling_interval + interval_increment, sampling_interval_bounds[1])
+            sampling_interval = min(sampling_interval + interval_increment, sampling_interval_bounds[1])
 
         # Export the results
         for prediction_no, pose_result in enumerate(pose_results["predictions"]):
@@ -115,9 +110,9 @@ def pre_process(video_analyzer_object: video_analyzer = None, report_config: dic
             total_frame_count = video_analyzer_object.get_total_frames()
             if report_config["analyze_only_specific_interval"]:
                 progress_percentage = (video_analyzer_object.get_current_seconds()-start_time_seconds)/(end_time_seconds-start_time_seconds)*100
-                print(f"(%{progress_percentage:.2f}) {video_analyzer_object.get_str_current_video_time()} Interval: {sampling_interval:0.2f}s : - {number_of_detections} detections")
+                print(f"(%{progress_percentage:.2f}) {video_analyzer_object.get_str_current_video_time()} Interval: {sampling_interval-interval_increment:0.2f}s : - {number_of_detections} detections")
             else:
-                print(f"(%{100*frame_index_now/total_frame_count:.2f}) {video_analyzer_object.get_str_current_video_time()} Interval: {sampling_interval:0.2f}s : - {number_of_detections} detections")
+                print(f"(%{100*frame_index_now/total_frame_count:.2f}) {video_analyzer_object.get_str_current_video_time()} Interval: {sampling_interval-interval_increment:0.2f}s : - {number_of_detections} detections")
 
         if report_config["show_video"]:
             pose_detector_object.draw_bounding_boxes(
