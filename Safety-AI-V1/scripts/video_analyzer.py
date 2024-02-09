@@ -154,7 +154,7 @@ class videoAnalyzer:
         self.video_capture_object.set(cv2.CAP_PROP_POS_FRAMES, self.current_frame_index)
         return True
     
-    def set_current_seconds(self, seconds: int) -> None:
+    def set_current_seconds(self, seconds: float) -> None:
         if seconds < 0 or seconds > self.TOTAL_SECONDS:
             raise ValueError("Invalid seconds")
         self.current_frame_index = math.floor(seconds * self.VIDEO_FPS)

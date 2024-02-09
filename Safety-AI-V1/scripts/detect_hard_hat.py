@@ -38,10 +38,10 @@ class hardHatDetector:
         empty_prediction_dict ={                         
                     "class_index":0,
                     "class_name":"NoName",
-                    "bbox_confidence":0,
-                    "bbox": [0,0,0,0], # Bounding box in the format [x1,y1,x2,y2]
-                    "bbox_area": 0,
-                    "bbox_area_normalized": 0,
+                    "hard_hat_bbox_confidence":0,
+                    "hard_hat_bbox": [0,0,0,0], # Bounding box in the format [x1,y1,x2,y2]
+                    "hard_hat_bbox_area": 0,
+                    "hard_hat_bbox_area_normalized": 0,
                     "is_hard_hat_present": False,
             }
         return empty_prediction_dict
@@ -66,14 +66,15 @@ class hardHatDetector:
             box_conf = boxes.conf.cpu().numpy()[0]
             box_xyxy = boxes.xyxy.cpu().numpy()[0]
             bbox_pixel_area = (box_xyxy[2]-box_xyxy[0])*(box_xyxy[3]-box_xyxy[1])
-
+            
             result_detection_dict = self._PREDICTION_DICT_TEMPLATE()
             result_detection_dict["class_index"] = box_cls_no
             result_detection_dict["class_name"] = box_cls_name
-            result_detection_dict["bbox_confidence"] = box_conf
-            result_detection_dict["bbox"] = box_xyxy # Bounding box in the format [x1,y1,x2,y2]
-            result_detection_dict["bbox_pixel_area"] = bbox_pixel_area
-            
+            result_detection_dict["hard_hat_bbox_confidence"] = box_conf
+            result_detection_dict["hard_hat_bbox"] = box_xyxy # Bounding box in the format [x1,y1,x2,y2]
+            result_detection_dict["hard_hat_bbox_area"] = bbox_pixel_area
+            result_detection_dict["hard_hat_bbox_area_normalized"] = bbox_pixel_area/(results.orig_shape[0]*results.orig_shape[1])
+            result_detection_dict["is_hard_hat_present"] = True if box_cls_name == "hard_hat" else False
             self.prediction_results["predictions"].append(result_detection_dict)
     
     def get_prediction_results(self):

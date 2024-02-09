@@ -137,44 +137,25 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
     hard_hat_detector_object = detect_hard_hat.hardHatDetector(
         model_path=report_config["hard_hat_detection_model_path"])
 
-    for detection_index, detection_dict in enumerate(pre_process_results):
-        current_second = detection_dict["current_second"]
-        video_analyzer_object.set_current_seconds(current_second)
+
+    #get the seconds when a person(s) is detected
+    human_detected_pre_detections = {}
+    for detection_dict in pre_process_results:
+        if detection_dict["current_second"] in human_detected_pre_detections:
+            human_detected_pre_detections[detection_dict["current_second"]].append(detection_dict)     
+        else:
+            human_detected_pre_detections[detection_dict["current_second"]] = [detection_dict]
+
+    #iterate through the seconds and detect hard hats
+    for detection_second, human_predictions in human_detected_pre_detections.items():
+        video_analyzer_object.set_current_seconds(detection_second)
         sampled_frame = video_analyzer_object.get_current_frame()
-
         hard_hat_detector_object.predict_frame(sampled_frame)
-        hard_hat_results = hard_hat_detector_object.get_prediction_results()
+        hard_hat_predictions = hard_hat_detector_object.get_prediction_results()
 
-        for prediction_no, hard_hat_result in enumerate(hard_hat_results["predictions"]):
+        pprint.pprint(hard_hat_predictions["predictions"])
 
-            x1, y1, x2, y2 = detection_dict["bbox_coordinates"]
-            h_x1, h_y1, h_x2, h_y2 = hard_hat_result["bbox"]
-            hard_hat_dict = {
-                "date": video_analyzer_object.get_str_current_date(),
-                "total_frame_count": video_analyzer_object.get_total_frames(),
-                "current_frame_index": video_analyzer_object.get_current_frame_index(),
-                "video_duration_seconds": video_analyzer_object.get_video_duration_in_seconds(),
-                "current_second": video_analyzer_object.get_current_seconds(),
 
-                "video_time": video_analyzer_object.get_str_current_video_time(),
-                "prediction_no": prediction_no,
 
-                "class_name": hard_hat_result["class_name"],
-                "hard_hat_bbox": [h_x1, h_y1, h_x2, h_y2],
-                "hard_hat_prediction_confidence": hard_hat_result["bbox_confidence"],
-                "hard_hat_bbox_pixel_area": hard_hat_result["bbox_area"],
-                "hard_hat_bbox_area_normalized": f"{video_analyzer_object.normalize_area(hard_hat_result['bbox_pixel_area']):0.4f}",
-                "is_hard_hat_present": hard_hat_result["is_hard_hat_present"]
 
-            }
 
-            hard_hat_csv_exporter_object.append_row(hard_hat_dict)
-
-        if report_config["verbose"]:
-            print(
-                f"{detection_index+1}/{len(pre_process_results)} | {video_analyzer_object.get_str_current_video_time()}s - {len(hard_hat_results['predictions'])} hard-hat related detections")
-
-        if report_config["show_video"]:
-            hard_hat_detector_object.draw_predictions()
-            cv2.imshow("Post-process - hard hat", sampled_frame)
-            cv2.waitKey(100)
