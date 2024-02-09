@@ -28,12 +28,10 @@ def pre_process(video_analyzer_object: video_analyzer = None, report_config: dic
     interval_increment = report_config["sampling_interval_increment"]
     sampling_interval = sampling_interval_bounds[0]
 
-    start_time_seconds = report_config["start_analyzing_from_second"]["hour"]*3600 + \
-        report_config["start_analyzing_from_second"]["minute"] * \
-        60+report_config["start_analyzing_from_second"]["second"]
-    end_time_seconds = report_config["end_analyzing_at_second"]["hour"]*3600 + \
-        report_config["end_analyzing_at_second"]["minute"]*60 + \
-        report_config["end_analyzing_at_second"]["second"]
+    start_time_seconds = report_config["start_analyzing_from_second"]["hour"]*3600 + report_config["start_analyzing_from_second"]["minute"]*60+ report_config["start_analyzing_from_second"]["second"]
+    start_time_seconds = int(start_time_seconds)
+    end_time_seconds = report_config["end_analyzing_at_second"]["hour"]*3600 + report_config["end_analyzing_at_second"]["minute"]*60+ report_config["end_analyzing_at_second"]["second"]
+    end_time_seconds = int(end_time_seconds)
 
     if report_config["analyze_only_specific_interval"]:
         video_analyzer_object.set_current_seconds(start_time_seconds)
