@@ -3,7 +3,7 @@ import cv2
 from ultralytics import YOLO
 import time
 
-class hardHatDetector:
+class safetyEquipmentDetector:
     def __init__(self, model_path : str ) -> None:
         # Check if the file exists
         if os.path.exists(model_path):

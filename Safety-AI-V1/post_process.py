@@ -3,7 +3,7 @@ import pprint
 import cv2
 import scripts.video_analyzer as video_analyzer
 import scripts.detect_pose as detect_pose
-import scripts.detect_hard_hat as detect_hard_hat
+import scripts.detect_safety_equipment as detect_safety_equipment
 import scripts.csv_exporter as csv_exporter
 import scripts.object_tracker as object_tracker
 
@@ -132,11 +132,8 @@ def post_process_restriced_area(report_config: dict = None, pre_process_results:
 
 
 def post_process_hard_hat(report_config: dict = None, pre_process_results: list[dict] = None, video_analyzer_object: video_analyzer = None):
-    hard_hat_csv_exporter_object = csv_exporter.CSV_Exporter(
-        folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="post_process_hard_hat_results")
-    hard_hat_detector_object = detect_hard_hat.hardHatDetector(
-        model_path=report_config["hard_hat_detection_model_path"])
-
+    hard_hat_csv_exporter_object = csv_exporter.CSV_Exporter( folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="post_process_hard_hat_results")
+    hard_hat_detector_object = detect_safety_equipment.safetyEquipmentDetector(model_path=report_config["hard_hat_detection_model_path"])
 
     #get the frames when a person(s) is detected
     human_detected_pre_detections = {}
@@ -172,23 +169,23 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
             kx1, ky1, kx2, ky2 = int(kx1), int(ky1), int(kx2), int(ky2)          
             cv2.rectangle(sampled_frame, (kx1,ky1), (kx2,ky2), (0,255,0), 2)
 
+            #check if any protective equipment analyze is performed inside the human bbox
             for hard_hat_prediction in hard_hat_related_predicted_regions:
-                if check_if_inside(hard_hat_prediction[0], hard_hat_prediction[1], human_prediction[0], human_prediction[1], human_prediction[2], human_prediction[3]):
-                    print("OVERLAP")
+                is_hard_hat_center_inside_human_bbox = check_if_inside(hard_hat_prediction[0], hard_hat_prediction[1], kx1, ky1, kx2, ky2)
+                if is_hard_hat_center_inside_human_bbox:
                     print(video_analyzer_object.get_str_current_video_time())
                     print(hard_hat_prediction)
                     print(human_prediction)
                     break
                 else:
-                    print("NO OVERLAP")
                     print(video_analyzer_object.get_str_current_video_time())
                     print(hard_hat_prediction)
                     print(human_prediction)
                     continue
-        
-        hard_hat_detector_object.draw_predictions()
-        cv2.imshow("Post-process - hard-hat", sampled_frame)
-        cv2.waitKey(2500)
+        if report_config["show_video"]:
+            hard_hat_detector_object.draw_predictions()
+            cv2.imshow("Post-process - hard-hat", sampled_frame)
+            cv2.waitKey(2500)
 
 
 
