@@ -10,12 +10,9 @@ import scripts.object_tracker as object_tracker
 
 def post_process_restriced_area(report_config: dict = None, pre_process_results: list[dict] = None, video_analyzer_object: video_analyzer = None):
 
-    tracking_csv_exporter_object = csv_exporter.CSV_Exporter(
-        folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="post_process_tracking_results")
-    pose_detector_object = detect_pose.poseDetector(
-        model_path=report_config["post_pose_detection_model_path"])
-    object_tracker_object = object_tracker.TrackerSupervisor(
-        max_age=5, max_px_distance=200, confidence_threshold=0.5)
+    tracking_csv_exporter_object = csv_exporter.CSV_Exporter(folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="post_process_tracking_results")
+    pose_detector_object = detect_pose.poseDetector(model_path=report_config["post_pose_detection_model_path"])
+    object_tracker_object = object_tracker.TrackerSupervisor(max_age=5, max_px_distance=200, confidence_threshold=0.5)
 
     REGION_DATA = None
     with open(report_config["region_info_path"], 'r') as file:
@@ -29,7 +26,6 @@ def post_process_restriced_area(report_config: dict = None, pre_process_results:
         if detection_dict["is_coordinated_wrt_world_frame"] == True:
             person_x = float(detection_dict["person_x"])
             person_y = float(detection_dict["person_y"])
-
             if r_x1 < person_x < r_x2 and r_y1 < person_y < r_y2:
                 violation_seconds.append(detection_dict["current_second"])
 
@@ -68,7 +64,6 @@ def post_process_restriced_area(report_config: dict = None, pre_process_results:
                     person_x = pose_result["belly_coordinate_wrt_world_frame"][0][0]
                     person_y = pose_result["belly_coordinate_wrt_world_frame"][1][0]
                     person_z = pose_result["belly_coordinate_wrt_world_frame"][2][0]
-
                     x1, y1, x2, y2 = pose_result["bbox"]
 
                     tracker_dict = {
