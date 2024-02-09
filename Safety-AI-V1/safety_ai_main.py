@@ -2,6 +2,7 @@
 import json, os
 import scripts.video_analyzer as video_analyzer
 from datetime import datetime, timedelta, timezone
+
 report_config = json.load(open('json/report_config.json', 'r'))
 
 # Create a new folder to export the report and other related files. Note that it is created with a timestamp to avoid overwriting
@@ -9,6 +10,9 @@ new_folder_path = report_config["folder_to_export"] + datetime.now().strftime("_
 os.makedirs(new_folder_path)
 print(f"Folder already exists, new folder created with timestamp: {new_folder_path}")
 report_config["new_folder_path_dynamic_key"] = new_folder_path
+
+with open(f'{report_config["new_folder_path_dynamic_key"]}/report_config.json', 'w') as json_file:
+    json.dump(report_config, json_file, indent= 4)
 
 video_analyzer_object = video_analyzer.videoAnalyzer()
 video_start_date = datetime(
