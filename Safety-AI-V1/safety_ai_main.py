@@ -26,9 +26,18 @@ from pre_process import pre_process
 video_analyzer_object, pre_process_results = pre_process(video_analyzer_object, report_config)
 
 #POST-PROCESSING
-from post_process import post_process
-post_process(
-    pre_process_results = pre_process_results,
-    report_config = report_config, 
-    video_analyzer_object = video_analyzer_object,
-)
+if report_config["check_restricted_area_violation"]:
+    from post_process import post_process_restriced_area
+    post_process_restriced_area(
+        pre_process_results = pre_process_results,
+        report_config = report_config, 
+        video_analyzer_object = video_analyzer_object,
+    )
+
+if report_config["check_hard_hat_violation"]:
+    from post_process import post_process_hard_hat
+    post_process_hard_hat(
+        pre_process_results = pre_process_results,
+        report_config = report_config, 
+        video_analyzer_object = video_analyzer_object,
+    )
