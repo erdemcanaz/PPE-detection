@@ -153,8 +153,36 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
         hard_hat_detector_object.predict_frame(sampled_frame)
         hard_hat_predictions = hard_hat_detector_object.get_prediction_results()
 
-        pprint.pprint(hard_hat_predictions["predictions"])
+        human_predicted_regions = [] # [ [x1,y1,x2,y2,confidence], ...]
+        for human_prediction in human_predictions:
+            x1, y1, x2, y2 = human_prediction["bbox_coordinates"]
+            human_predicted_regions.append([x1,y1,x2,y2, human_prediction["bbox_confidence"]])
+        
+        hard_hat_related_predicted_regions = [] # [ [center_x, center_y, confidence, class_name], ...]
+        for hard_hat_prediction in hard_hat_predictions["predictions"]:
+            x_center, y_center = hard_hat_prediction["hard_hat_center"]
+            hard_hat_related_predicted_regions.append([x_center, y_center, hard_hat_prediction["hard_hat_bbox_confidence"], hard_hat_prediction["class_name"] ])
 
+        check_if_inside = lambda x_center, y_center, x1,y1,x2,y2: x1 < x_center < x2 and y1 < y_center < y2
+
+        for human_prediction in human_predicted_regions:
+            for hard_hat_prediction in hard_hat_related_predicted_regions:
+                if check_if_inside(hard_hat_prediction[0], hard_hat_prediction[1], human_prediction[0], human_prediction[1], human_prediction[2], human_prediction[3]):
+                    print("\nHard hat check overlaps with human bbox")
+                    print(video_analyzer_object.get_str_current_video_time())
+                    print(hard_hat_prediction)
+                    print(human_prediction)
+                    break
+                else:
+                    print("\nHard hat check does not overlap with human bbox")
+                    print(video_analyzer_object.get_str_current_video_time())
+                    print(hard_hat_prediction)
+                    print(human_prediction)
+                    continue
+        
+        hard_hat_detector_object.draw_predictions()
+        cv2.imshow("Post-process - hard-hat", sampled_frame)
+        cv2.waitKey(500)
 
 
 

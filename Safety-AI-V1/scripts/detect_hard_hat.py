@@ -40,6 +40,7 @@ class hardHatDetector:
                     "class_name":"NoName",
                     "hard_hat_bbox_confidence":0,
                     "hard_hat_bbox": [0,0,0,0], # Bounding box in the format [x1,y1,x2,y2]
+                    "hard_hat_center": [0,0], # [x,y]
                     "hard_hat_bbox_area": 0,
                     "hard_hat_bbox_area_normalized": 0,
                     "is_hard_hat_present": False,
@@ -68,10 +69,10 @@ class hardHatDetector:
             bbox_pixel_area = (box_xyxy[2]-box_xyxy[0])*(box_xyxy[3]-box_xyxy[1])
             
             result_detection_dict = self._PREDICTION_DICT_TEMPLATE()
-            result_detection_dict["class_index"] = box_cls_no
             result_detection_dict["class_name"] = box_cls_name
             result_detection_dict["hard_hat_bbox_confidence"] = box_conf
             result_detection_dict["hard_hat_bbox"] = box_xyxy # Bounding box in the format [x1,y1,x2,y2]
+            result_detection_dict["hard_hat_center"] = [ (box_xyxy[0]+box_xyxy[2])/2, (box_xyxy[1]+box_xyxy[3])/2]
             result_detection_dict["hard_hat_bbox_area"] = bbox_pixel_area
             result_detection_dict["hard_hat_bbox_area_normalized"] = bbox_pixel_area/(results.orig_shape[0]*results.orig_shape[1])
             result_detection_dict["is_hard_hat_present"] = True if box_cls_name == "hard_hat" else False
@@ -84,10 +85,10 @@ class hardHatDetector:
         frame = self.prediction_results['frame']
 
         for result in self.prediction_results["predictions"]:
-            x1, y1, x2, y2 = result["bbox"]
+            x1, y1, x2, y2 = result["hard_hat_bbox"]
             x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
             
-            conf = result["bbox_confidence"]
+            conf = result["hard_hat_bbox_confidence"]
             class_name = result["class_name"]
             color = (0,0,0)
             if class_name == 'hard_hat':
