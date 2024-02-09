@@ -184,7 +184,8 @@ class poseDetector():
                 #rs,ls,lh triangle error
                 error_2 = (d_rs_ls - poseDetector.SHOULDER_TO_SHOULDER)**2 + (d_ls_lh - poseDetector.SHOULDER_TO_HIP)**2 + (d_rs_lh - poseDetector.SHOULDER_TO_COUNTER_HIP)**2
 
-                return (error_1 + error_2)
+                error = error_1 + error_2
+                return error
             
             #optimize the triangle
             tolerance = 1e-6
@@ -202,9 +203,14 @@ class poseDetector():
                 v_rh = [rh_uv[0]*scalars[2], rh_uv[1]*scalars[2], rh_uv[2]*scalars[2]]
                 v_lh = [lh_uv[0]*scalars[3], lh_uv[1]*scalars[3], lh_uv[2]*scalars[3]]
 
-
-                v_belly = [(v_rs[0]+v_ls[0]+v_rh[0]+v_lh[0])/4, (v_rs[1]+v_ls[1]+v_rh[1]+v_lh[1])/4, (v_rs[2]+v_ls[2]+v_rh[2]+v_lh[2])/4]
-                d_belly = math.sqrt(v_belly[0]**2 + v_belly[1]**2 + v_belly[2]**2)
+                
+                if rh_data[2]>lh_data[2]:
+                    #
+                    v_belly = [ (v_ls[0]+v_rh[0])/2, (v_ls[1]+v_rh[1])/2, (v_ls[2]+v_rh[2])/2 ]
+                    d_belly = math.sqrt(v_belly[0]**2 + v_belly[1]**2 + v_belly[2]**2)
+                else:
+                    v_belly = [ (v_rs[0]+v_lh[0])/2, (v_rs[1]+v_lh[1])/2, (v_rs[2]+v_lh[2])/2 ]
+                    d_belly = math.sqrt(v_belly[0]**2 + v_belly[1]**2 + v_belly[2]**2)
 
                 #v_belly = A(world_coordinate) + C
                 A = transformation_matrices[0]

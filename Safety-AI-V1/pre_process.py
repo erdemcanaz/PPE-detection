@@ -44,7 +44,7 @@ def pre_process(video_analyzer_object: video_analyzer = None, report_config: dic
         sampled_frame = video_analyzer_object.get_current_frame()
 
         pose_detector_object.predict_frame(frame=sampled_frame, h_angle=REGION_DATA['CAMERA_H_VIEW_ANGLE'], v_angle=REGION_DATA['CAMERA_V_VIEW_ANGLE'])
-        pose_detector_object.approximate_prediction_distance(box_condifence_threshold=0.20, distance_threshold=1, shoulders_confidence_threshold= 0.75, transformation_matrices=transformation_matrices)
+        pose_detector_object.approximate_prediction_distance(box_condifence_threshold=0.20, distance_threshold=1, shoulders_confidence_threshold= 0.5, transformation_matrices=transformation_matrices)
         pose_results = pose_detector_object.get_prediction_results()
 
         # Adjust sampling interval

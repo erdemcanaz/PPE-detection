@@ -13,7 +13,7 @@ def post_process_restriced_area(report_config: dict = None, pre_process_results:
     tracking_sorted_csv_exporter_object = csv_exporter.CSV_Exporter(folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="sorted_post_process_tracking_results")
 
     pose_detector_object = detect_pose.poseDetector(model_path=report_config["post_pose_detection_model_path"])
-    object_tracker_object = object_tracker.TrackerSupervisor(max_age=50, max_px_distance=200, confidence_threshold=0.5)
+    object_tracker_object = object_tracker.TrackerSupervisor(max_age=5, max_px_distance=200, confidence_threshold=0.5)
 
     REGION_DATA = None
     with open(report_config["region_info_path"], 'r') as file:
@@ -136,17 +136,22 @@ def post_process_restriced_area(report_config: dict = None, pre_process_results:
         left_side_max_point = 0 # (x_threshold - {x})*bbox_conf where x < x_threshold
         right_side_max_point = 0 # ({x} - x_threshold)*bbox_conf where x > x_threshold
         for track_record in tracking_record:
-            bbox_conf = float(track_record["bbox_confidence"])
             person_x = float(track_record["person_x"])
+
+            bbox_conf = float(track_record["bbox_confidence"])
+            right_shoulder_confidence = float(track_record['right_shoulder'][2])
+            left_shoulder_confidence = float(track_record['left_shoulder'][2])
+            shoulder_confidence_multiplier = min(right_shoulder_confidence, left_shoulder_confidence)
+            print(shoulder_confidence_multiplier, right_shoulder_confidence, left_shoulder_confidence)
 
             if person_x < X_THRESHOLD:
                 person_x = max(person_x, X_MIN)
-                right_side_point = bbox_conf*((X_THRESHOLD - person_x)/(X_THRESHOLD-X_MIN))
+                right_side_point = shoulder_confidence_multiplier*bbox_conf*((X_THRESHOLD - person_x)/(X_THRESHOLD-X_MIN))
                 right_side_max_point = max(right_side_max_point, right_side_point)
 
             else:
                 person_x = min(person_x, X_MAX)
-                left_side_point = bbox_conf*((person_x - X_THRESHOLD)/(X_MAX-X_THRESHOLD))
+                left_side_point = shoulder_confidence_multiplier*bbox_conf*((person_x - X_THRESHOLD)/(X_MAX-X_THRESHOLD))
                 left_side_max_point = max(left_side_max_point, left_side_point)
 
         track_violation_score = left_side_max_point*right_side_max_point # between 0 and 1
