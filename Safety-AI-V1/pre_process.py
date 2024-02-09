@@ -59,34 +59,31 @@ def pre_process(video_analyzer_object:video_analyzer=None, report_config:dict=No
 
             x1, y1, x2, y2 = pose_result["bbox"]
 
-            detection_info = {
-                "is_coordinated_wrt_world_frame": pose_result["is_coordinated_wrt_world_frame"],
-
+            detection_info = {           
+                #related to analyzed frame of the video
                 "date": video_analyzer_object.get_str_current_date(),
                 "total_frame_count": video_analyzer_object.get_total_frames(),
                 "current_frame_index": video_analyzer_object.get_current_frame_index(),
                 "video_duration_seconds": video_analyzer_object.get_video_duration_in_seconds(),
                 "current_second": video_analyzer_object.get_current_seconds(),
 
+                #related to the bbox of the each individual detection
+                "bbox_confidence": f"{pose_result['bbox_confidence']:0.3f}",
                 "bbox_coordinates": [x1,y1,x2,y2],
-                "bbox_coordinates_str": f"top_left: {x1}, {y1} bottom_right: {x2}, {y2}",
-                "box_coordinates_normalized": f"top_left:{video_analyzer_object.normalize_x_y(x1,y1)} bottom_right:{video_analyzer_object.normalize_x_y(x2,y2)}",
                 "bbox_area":int(pose_result["bbox_pixel_area"]),
                 "bbox_area_normalized":f"{video_analyzer_object.normalize_area(pose_result['bbox_pixel_area']):0.4f}",
                 "video_time": video_analyzer_object.get_str_current_video_time(),
                 "prediction_no": prediction_no,
-
-                "bbox_confidence": f"{pose_result['bbox_confidence']:0.3f}",
+                
                 "right_shoulder_confidence": f"{pose_result['keypoints']['right_shoulder'][2]:0.3f}",
                 "left_shoulder_confidence": f"{pose_result['keypoints']['left_shoulder'][2]:0.3f}",
                 "right_hip_confidence": f"{pose_result['keypoints']['right_hip'][2]:0.3f}",
                 "left_hip_confidence": f"{pose_result['keypoints']['left_hip'][2]:0.3f}",
 
+                "is_coordinated_wrt_world_frame": pose_result["is_coordinated_wrt_world_frame"],
                 "person_x": f"{person_x:.3f}",
                 "person_y": f"{person_y:.3f}",
                 "person_z": f"{person_z:.3f}",
-
-                "tracker_id":"None"
             }   
             
             pre_process_results.append(detection_info)
