@@ -138,18 +138,20 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
         model_path=report_config["hard_hat_detection_model_path"])
 
 
-    #get the seconds when a person(s) is detected
+    #get the frames when a person(s) is detected
     human_detected_pre_detections = {}
     for detection_dict in pre_process_results:
-        if detection_dict["current_second"] in human_detected_pre_detections:
-            human_detected_pre_detections[detection_dict["current_second"]].append(detection_dict)     
+        if detection_dict["current_frame_index"] in human_detected_pre_detections:
+            human_detected_pre_detections[detection_dict["current_frame_index"]].append(detection_dict)     
         else:
-            human_detected_pre_detections[detection_dict["current_second"]] = [detection_dict]
+            human_detected_pre_detections[detection_dict["current_frame_index"]] = [detection_dict]
 
-    #iterate through the seconds and detect hard hats
-    for detection_second, human_predictions in human_detected_pre_detections.items():
-        video_analyzer_object.set_current_seconds(detection_second)
-        sampled_frame = video_analyzer_object.get_current_frame()
+    #iterate through the frames and detect hard hats
+    for detection_frame_index, human_predictions in human_detected_pre_detections.items():
+        video_analyzer_object.set_current_frame_index(detection_frame_index)
+        print(f"\nAnalyzing frame: {detection_frame_index}")
+
+        sampled_frame = video_analyzer_object.get_current_frame()        
         hard_hat_detector_object.predict_frame(sampled_frame)
         hard_hat_predictions = hard_hat_detector_object.get_prediction_results()
 
@@ -166,15 +168,19 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
         check_if_inside = lambda x_center, y_center, x1,y1,x2,y2: x1 < x_center < x2 and y1 < y_center < y2
 
         for human_prediction in human_predicted_regions:
+            kx1, ky1, kx2, ky2 = human_prediction[0:4]
+            kx1, ky1, kx2, ky2 = int(kx1), int(ky1), int(kx2), int(ky2)          
+            cv2.rectangle(sampled_frame, (kx1,ky1), (kx2,ky2), (0,255,0), 2)
+
             for hard_hat_prediction in hard_hat_related_predicted_regions:
                 if check_if_inside(hard_hat_prediction[0], hard_hat_prediction[1], human_prediction[0], human_prediction[1], human_prediction[2], human_prediction[3]):
-                    print("\nHard hat check overlaps with human bbox")
+                    print("OVERLAP")
                     print(video_analyzer_object.get_str_current_video_time())
                     print(hard_hat_prediction)
                     print(human_prediction)
                     break
                 else:
-                    print("\nHard hat check does not overlap with human bbox")
+                    print("NO OVERLAP")
                     print(video_analyzer_object.get_str_current_video_time())
                     print(hard_hat_prediction)
                     print(human_prediction)
@@ -182,7 +188,7 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
         
         hard_hat_detector_object.draw_predictions()
         cv2.imshow("Post-process - hard-hat", sampled_frame)
-        cv2.waitKey(500)
+        cv2.waitKey(2500)
 
 
 

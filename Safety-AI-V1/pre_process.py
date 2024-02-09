@@ -59,10 +59,9 @@ def pre_process(video_analyzer_object: video_analyzer = None, report_config: dic
         if max_confidence > report_config["min_confidence_to_decrease_interval"] and sampling_interval > sampling_interval_bounds[0]:
             sampling_interval = sampling_interval_bounds[0]
             if current_second > sampling_interval:
-                video_analyzer_object.fast_backward_seconds(
-                    min(sampling_interval, current_second))
-                print(
-                    f"A person is detected at {video_analyzer_object.get_str_current_video_time()}.")
+                video_analyzer_object.fast_backward_seconds(min(sampling_interval, current_second))            
+                print(f"A person is detected at {video_analyzer_object.get_str_current_video_time()}.")
+                continue
         else:
             sampling_interval = min(
                 sampling_interval + interval_increment, sampling_interval_bounds[1])
