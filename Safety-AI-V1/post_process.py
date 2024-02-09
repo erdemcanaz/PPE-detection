@@ -49,7 +49,7 @@ def post_process_restriced_area(report_config: dict = None, pre_process_results:
             violation_intervals.append([violation_second - report_config["half_violation_time"],
                                        violation_second + report_config["half_violation_time"]])
 
-    all_records = []
+    all_rows = []
     for violation_index, violation_interval in enumerate(violation_intervals):
         object_tracker_object.clear_trackers()
         video_analyzer_object.set_current_seconds(violation_interval[0])
@@ -128,11 +128,13 @@ def post_process_restriced_area(report_config: dict = None, pre_process_results:
         # all violation period is analyzed. Now, we can append the records to the csv file and continue with next interval
         for track_record_id, tracking_record in object_tracker_object.get_tracker_records().items():
             for track_record in tracking_record:
+                all_rows.append(track_record)
                 tracking_csv_exporter_object.append_row(track_record)
-
+                
+    return all_rows
 
 def post_process_hard_hat(report_config: dict = None, pre_process_results: list[dict] = None, video_analyzer_object: video_analyzer = None):
-    hard_hat_csv_exporter_object = csv_exporter.CSV_Exporter( folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="post_process_hard_hat_results")
+    hard_hat_csv_exporter_object = csv_exporter.CSV_Exporter( folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="post_process_safety_equipment_results")
     hard_hat_detector_object = detect_safety_equipment.safetyEquipmentDetector(model_path=report_config["hard_hat_detection_model_path"])
 
     #get the frames when a person(s) is detected
@@ -144,6 +146,7 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
             human_detected_pre_detections[detection_dict["current_frame_index"]] = [detection_dict]
 
     #iterate through the frames and detect hard hats
+    all_rows = []
     for detection_frame_index, human_predictions in human_detected_pre_detections.items():
         video_analyzer_object.set_current_frame_index(detection_frame_index)
         print(f"\nAnalyzing frame: {detection_frame_index}")
@@ -169,6 +172,26 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
             kx1, ky1, kx2, ky2 = int(kx1), int(ky1), int(kx2), int(ky2)          
             cv2.rectangle(sampled_frame, (kx1,ky1), (kx2,ky2), (0,255,0), 2)
 
+            atleast_joints = ["left_eye", "right_eye", "nose", "left_ear", "right_ear"]
+            for joint in atleast_joints:
+                print(human_prediction["keypoints"][joint+"_confidence"])
+                # if human_prediction[joint+"_confidence"] > 0.1:
+                #     cv2.circle(sampled_frame, (int(human_prediction[joint][0]), int(human_prediction[joint][1])), 5, (0,255,0), -1)
+                
+            safety_equipment_row = {
+                "date": video_analyzer_object.get_str_current_date(),
+                "video_time": video_analyzer_object.get_str_current_video_time(),
+                "current_second": video_analyzer_object.get_current_seconds(),
+                "frame_index": detection_frame_index,
+                "bbox_coordinates": [kx1, ky1, kx2, ky2],
+                "bbox_confidence": human_prediction[4],
+                "is_safety_equipment_present": False,
+                "safety_equipment_confidence": 0,
+                "safety_equipment_class": "None",
+                "safety_equipment_bbox_center": [0,0],
+                "safety_equipment_confidence": 0                
+            }
+          
             #check if any protective equipment analyze is performed inside the human bbox
             for hard_hat_prediction in hard_hat_related_predicted_regions:
                 is_hard_hat_center_inside_human_bbox = check_if_inside(hard_hat_prediction[0], hard_hat_prediction[1], kx1, ky1, kx2, ky2)
@@ -176,16 +199,24 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
                     print(video_analyzer_object.get_str_current_video_time())
                     print(hard_hat_prediction)
                     print(human_prediction)
+                    safety_equipment_row["is_safety_equipment_present"] = True
+                    safety_equipment_row["safety_equipment_bbox_center"] = hard_hat_prediction[0:2]
+                    safety_equipment_row["safety_equipment_confidence"] = hard_hat_prediction[2]
+                    safety_equipment_row["safety_equipment_class"] = hard_hat_prediction[3]
                     break
-                else:
-                    print(video_analyzer_object.get_str_current_video_time())
-                    print(hard_hat_prediction)
-                    print(human_prediction)
+                else:                   
+                    # The case where there is no safety equipment detected inside the human bbox
                     continue
+
+            hard_hat_csv_exporter_object.append_row(safety_equipment_row)
+            all_rows.append(safety_equipment_row)
+
         if report_config["show_video"]:
             hard_hat_detector_object.draw_predictions()
             cv2.imshow("Post-process - hard-hat", sampled_frame)
             cv2.waitKey(2500)
+
+    return all_rows
 
 
 

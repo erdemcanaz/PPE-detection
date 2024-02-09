@@ -90,6 +90,12 @@ def pre_process(video_analyzer_object: video_analyzer = None, report_config: dic
                 "video_time": video_analyzer_object.get_str_current_video_time(),
                 "prediction_no": prediction_no,
 
+                "left_eye_confidence": f"{pose_result['keypoints']['left_eye'][2]:0.3f}",
+                "right_eye_confidence": f"{pose_result['keypoints']['right_eye'][2]:0.3f}",
+                "nose_confidence": f"{pose_result['keypoints']['nose'][2]:0.3f}",
+                "left_ear_confidence": f"{pose_result['keypoints']['left_ear'][2]:0.3f}",
+                "right_ear_confidence": f"{pose_result['keypoints']['right_ear'][2]:0.3f}",
+
                 "right_shoulder_confidence": f"{pose_result['keypoints']['right_shoulder'][2]:0.3f}",
                 "left_shoulder_confidence": f"{pose_result['keypoints']['left_shoulder'][2]:0.3f}",
                 "right_hip_confidence": f"{pose_result['keypoints']['right_hip'][2]:0.3f}",
