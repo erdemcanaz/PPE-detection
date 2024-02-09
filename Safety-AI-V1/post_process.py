@@ -155,9 +155,20 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
         hard_hat_detector_object.predict_frame(sampled_frame)
         hard_hat_predictions = hard_hat_detector_object.get_prediction_results()
 
-        human_predicted_regions = [] # [ [x1,y1,x2,y2,confidence], ...]
+        human_predicted_regions = [] # [ [x1,y1,x2,y2,confidence, keypoints], ...]
         for human_prediction in human_predictions:
             x1, y1, x2, y2 = human_prediction["bbox_coordinates"]
+
+            #check if the head is in the frame
+            atleast_joints = ["left_eye", "right_eye", "nose", "left_ear", "right_ear"]
+            is_head_visible = False
+            for joint in atleast_joints:
+                if float(human_prediction[joint+"_confidence"]) > 0.1:
+                    is_head_visible = True
+                    break
+            if not is_head_visible:
+                continue
+
             human_predicted_regions.append([x1,y1,x2,y2, human_prediction["bbox_confidence"]])
         
         hard_hat_related_predicted_regions = [] # [ [center_x, center_y, confidence, class_name], ...]
@@ -172,12 +183,6 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
             kx1, ky1, kx2, ky2 = int(kx1), int(ky1), int(kx2), int(ky2)          
             cv2.rectangle(sampled_frame, (kx1,ky1), (kx2,ky2), (0,255,0), 2)
 
-            atleast_joints = ["left_eye", "right_eye", "nose", "left_ear", "right_ear"]
-            for joint in atleast_joints:
-                print(human_prediction["keypoints"][joint+"_confidence"])
-                # if human_prediction[joint+"_confidence"] > 0.1:
-                #     cv2.circle(sampled_frame, (int(human_prediction[joint][0]), int(human_prediction[joint][1])), 5, (0,255,0), -1)
-                
             safety_equipment_row = {
                 "date": video_analyzer_object.get_str_current_date(),
                 "video_time": video_analyzer_object.get_str_current_video_time(),
@@ -189,32 +194,47 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
                 "safety_equipment_confidence": 0,
                 "safety_equipment_class": "None",
                 "safety_equipment_bbox_center": [0,0],
-                "safety_equipment_confidence": 0                
+                "safety_equipment_confidence": 0,
+                "violation_score":0                
             }
           
             #check if any protective equipment analyze is performed inside the human bbox
             for hard_hat_prediction in hard_hat_related_predicted_regions:
                 is_hard_hat_center_inside_human_bbox = check_if_inside(hard_hat_prediction[0], hard_hat_prediction[1], kx1, ky1, kx2, ky2)
-                if is_hard_hat_center_inside_human_bbox:
-                    print(video_analyzer_object.get_str_current_video_time())
-                    print(hard_hat_prediction)
-                    print(human_prediction)
+                if is_hard_hat_center_inside_human_bbox:                    
                     safety_equipment_row["is_safety_equipment_present"] = True
                     safety_equipment_row["safety_equipment_bbox_center"] = hard_hat_prediction[0:2]
                     safety_equipment_row["safety_equipment_confidence"] = hard_hat_prediction[2]
                     safety_equipment_row["safety_equipment_class"] = hard_hat_prediction[3]
+                    
+                    violation_score = None
+                    human_box_confidence = float(human_prediction[4])
+                    safety_equipment_confidence = float(safety_equipment_row["safety_equipment_confidence"])
+                    if safety_equipment_row["safety_equipment_class"] == "hard_hat":
+                        violation_score = human_box_confidence*(1-safety_equipment_confidence)
+                    elif safety_equipment_row["safety_equipment_class"] == "no_hard_hat":
+                        violation_score = human_box_confidence*safety_equipment_confidence
+                    else:
+                        print("Unknown safety equipment class")
+                        violation_score = 0
+                    safety_equipment_row["violation_score"] = violation_score 
+
                     break
                 else:                   
                     # The case where there is no safety equipment detected inside the human bbox
+                    safety_equipment_row["violation_score"] = human_prediction[4]
                     continue
+
+            print("za",video_analyzer_object.get_str_current_video_time(), safety_equipment_row['violation_score'])
+            print(f"{video_analyzer_object.get_str_current_video_time()} | {safety_equipment_row['violation_score']:.2f} ")
 
             hard_hat_csv_exporter_object.append_row(safety_equipment_row)
             all_rows.append(safety_equipment_row)
 
         if report_config["show_video"]:
             hard_hat_detector_object.draw_predictions()
-            cv2.imshow("Post-process - hard-hat", sampled_frame)
-            cv2.waitKey(2500)
+            cv2.imshow("Post-process - safety equipment (hard hat)", sampled_frame)
+            cv2.waitKey(1)
 
     return all_rows
 
