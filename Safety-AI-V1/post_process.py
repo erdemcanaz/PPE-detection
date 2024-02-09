@@ -55,7 +55,7 @@ def post_process_restriced_area(report_config: dict = None, pre_process_results:
             sampled_frame = video_analyzer_object.get_current_frame()
 
             pose_detector_object.predict_frame(frame=sampled_frame, h_angle=REGION_DATA["CAMERA_H_VIEW_ANGLE"], v_angle=REGION_DATA["CAMERA_V_VIEW_ANGLE"])
-            pose_detector_object.approximate_prediction_distance( box_condifence_threshold=0.20, distance_threshold=1, shoulders_confidence_threshold= 0.85, transformation_matrices=transformation_matrices)
+            pose_detector_object.approximate_prediction_distance( box_condifence_threshold=0.20, distance_threshold=1, shoulders_confidence_threshold= 0.8, transformation_matrices=transformation_matrices)
             pose_results = pose_detector_object.get_prediction_results()
 
             tracker_detections = []
@@ -133,14 +133,14 @@ def post_process_restriced_area(report_config: dict = None, pre_process_results:
 
     sorted_tracks = []
     for track_record_id, tracking_record in all_trackings.items():
-        left_side_max_point = 0 # (x_threshold - {x})*bbox_conf where x < x_threshold
-        right_side_max_point = 0 # ({x} - x_threshold)*bbox_conf where x > x_threshold
+        left_side_max_point = 0.05 # (x_threshold - {x})*bbox_conf where x < x_threshold
+        right_side_max_point = 0.05 # ({x} - x_threshold)*bbox_conf where x > x_threshold
         for track_record in tracking_record:
             person_x = float(track_record["person_x"])
 
             bbox_conf = float(track_record["bbox_confidence"])
-            right_shoulder_confidence = float(track_record['right_shoulder'][2])
-            left_shoulder_confidence = float(track_record['left_shoulder'][2])
+            right_shoulder_confidence = float(track_record['right_shoulder_confidence'])
+            left_shoulder_confidence = float(track_record['right_shoulder_confidence'])
             shoulder_confidence_multiplier = min(right_shoulder_confidence, left_shoulder_confidence)
             print(shoulder_confidence_multiplier, right_shoulder_confidence, left_shoulder_confidence)
 
@@ -272,7 +272,7 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
         if report_config["show_video"]:
             hard_hat_detector_object.draw_predictions()
             cv2.imshow("Post-process - safety equipment (hard hat)", sampled_frame)
-            cv2.waitKey(250)    
+            cv2.waitKey(1)    
     cv2.destroyAllWindows()
 
     all_rows_sorted = sorted(all_rows, key=lambda x: x['violation_score'], reverse=True)
