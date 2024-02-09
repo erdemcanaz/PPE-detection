@@ -149,7 +149,7 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
     all_rows = []
     for detection_frame_index, human_predictions in human_detected_pre_detections.items():
         video_analyzer_object.set_current_frame_index(detection_frame_index)
-        print(f"\nAnalyzing frame: {detection_frame_index}")
+        print(f"\n{video_analyzer_object.get_str_current_video_time()} | Analyzing frame: {detection_frame_index}")
 
         sampled_frame = video_analyzer_object.get_current_frame()        
         hard_hat_detector_object.predict_frame(sampled_frame)
@@ -199,6 +199,8 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
             }
           
             #check if any protective equipment analyze is performed inside the human bbox
+            
+            safety_equipment_row["violation_score"] = float(human_prediction[4]) # For the case where there is no safety equipment detected
             for hard_hat_prediction in hard_hat_related_predicted_regions:
                 is_hard_hat_center_inside_human_bbox = check_if_inside(hard_hat_prediction[0], hard_hat_prediction[1], kx1, ky1, kx2, ky2)
                 if is_hard_hat_center_inside_human_bbox:                    
@@ -216,25 +218,20 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
                         violation_score = human_box_confidence*safety_equipment_confidence
                     else:
                         print("Unknown safety equipment class")
-                        violation_score = 0
+                        violation_score = -1
                     safety_equipment_row["violation_score"] = violation_score 
-
                     break
-                else:                   
-                    # The case where there is no safety equipment detected inside the human bbox
-                    safety_equipment_row["violation_score"] = human_prediction[4]
+                else:                                      
                     continue
-
-            print("za",video_analyzer_object.get_str_current_video_time(), safety_equipment_row['violation_score'])
-            print(f"{video_analyzer_object.get_str_current_video_time()} | {safety_equipment_row['violation_score']:.2f} ")
-
+            
+            print("\t  violation score:", f"{safety_equipment_row['violation_score']:.2f}")
             hard_hat_csv_exporter_object.append_row(safety_equipment_row)
             all_rows.append(safety_equipment_row)
 
         if report_config["show_video"]:
             hard_hat_detector_object.draw_predictions()
             cv2.imshow("Post-process - safety equipment (hard hat)", sampled_frame)
-            cv2.waitKey(1)
+            cv2.waitKey(250)
 
     return all_rows
 
