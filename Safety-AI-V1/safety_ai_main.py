@@ -56,5 +56,6 @@ generate_report_EN(
     report_config = report_config,
     folder_path= new_folder_path,
     all_sorted_tracks = all_sorted_tracks,
+    all_tracking_rows = all_tracking_rows
 )
 

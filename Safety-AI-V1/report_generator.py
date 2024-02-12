@@ -1,9 +1,12 @@
 import datetime, json, uuid, pprint
 import cv2
 import scripts.svg_editor as svg_editor
-import scripts.csv_dealers as csv_dealer
 
-def generate_report_EN(folder_path = None, report_config = None, all_sorted_tracks:list[dict] = None):
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def generate_report_EN(folder_path = None, report_config = None, all_sorted_tracks:list[dict] = None, all_tracking_rows:list[dict] = None):
     REGION_DATA = None
     with open(report_config["region_info_path"], 'r') as file:
         REGION_DATA = json.load(file)
@@ -131,28 +134,15 @@ def generate_report_EN(folder_path = None, report_config = None, all_sorted_trac
         
     #-------------------
     if report_config["check_restricted_area_violation"]:        
-        # cover_page_svg_path = f"{folder_path}/svg_exports/page_{page_no}_cover_page.svg"
-        # svg_creator_object.create_new_drawing(cover_page_svg_path, size=('1244', '1756px'))
-
-        # COVER_PAGE_TEMPLATE_EN_PATH = REGION_DATA["DEFAULT_TEMPLATE_PATHS"]["COVER_PAGE_TEMPLATE_EN"][0]
-        # cv2_image = cv2.imread(COVER_PAGE_TEMPLATE_EN_PATH, cv2.IMREAD_UNCHANGED)
-        
-        # svg_creator_object.embed_cv2_image_adjustable_resolution(
-        #     filename = cover_page_svg_path, 
-        #     insert= (0,0), size = svg_creator_object.get_size() , 
-        #     cv2_image = cv2_image, 
-        #     constant_proportions= True, 
-        #     quality_factor= 2
-        # )
-
 
         RESTRICTED_AREA_VIOLATION_TEMPLATE = REGION_DATA["DEFAULT_TEMPLATE_PATHS"]["RESTRICTED_AREA_TEMPLATE_EN"][0]
         cv2_image = cv2.imread(RESTRICTED_AREA_VIOLATION_TEMPLATE, cv2.IMREAD_UNCHANGED)
 
         for i in range(0, len(all_sorted_tracks), 3):
-            # This slice will get up to 3 elements, handling cases where there are fewer than 3 elements left
+            #Render restricted area detection page
             restricted_area_page_n_svg_path = f"{folder_path}/svg_exports/page_{page_no}_restricted_area_violation_page.svg"
-            
+            svg_creator_object.create_new_drawing(restricted_area_page_n_svg_path, size=('1244', '1756px'))
+
             svg_creator_object.embed_cv2_image_adjustable_resolution(
             filename = restricted_area_page_n_svg_path, 
             insert= (0,0), size = svg_creator_object.get_size() , 
@@ -161,22 +151,47 @@ def generate_report_EN(folder_path = None, report_config = None, all_sorted_trac
             quality_factor= 2
             )
 
-            for track_no, track_info in enumerate(current_tracks):
-
-                pass
-
+            # This slice will get up to 3 elements, handling cases where there are fewer than 3 elements left
             current_tracks = all_sorted_tracks[i:i+3]
+            for no, track_info in enumerate(current_tracks):
+                first_frame_date = track_info["first_frame_date"] #a datetime.datetime object
+                first_frame_index = track_info["first_frame_index"] 
+                first_frame_time = track_info["first_frame_time"] #str video timestamp
+                last_frame_index = track_info["last_frame_index"]
+                last_frame_time = track_info["last_frame_time"]
+                track_id = int(track_info["track_id"])
+                track_violation_score = track_info["violation_score"]
+
+                x = []
+                y = []
+
+                for info_dict in all_tracking_rows:
+                    if int(info_dict["tracker_id"]) == track_id:
+                        x.append( float(info_dict["person_x"]) )
+                        y.append( float(info_dict["person_y"]) )
+
+                # Load your background image
+                bg_image = plt.imread(REGION_DATA["DEFAULT_TEMPLATE_PATHS"]['2D_MAP'][0])
+
+                # Create the plot
+                plt.figure(figsize=(8, 6))
+                plt.imshow(bg_image, extent=[0,10 , 0, 10])  # Adjust extent as needed
+                plt.scatter(x, y, color='black', s = 20)  # Plot data points on top of the background image
+                plt.axis('on')  # You can turn this off with 'off' if you don't want the axis
+                
+                plt.plot(x, y, color='black', label='Connections')  # Connect the nodes
+
+                # Highlight the initial and end nodes
+                plt.scatter(x[0], y[0], color='green', s=60, edgecolor='black', label='Start')  # Initial node
+                plt.scatter(x[-1], y[-1], color='red', s=60, edgecolor='black', label='End')  # End node
+                plt.legend()  # Show legend to label start and end nodes
+
+                plt.show()
+
             page_no += 1
 
-        # 'first_frame_date': datetime.datetime(2024, 1, 31, 8, 0, 14, 529412, tzinfo=datetime.timezone(datetime.timedelta(seconds=10800))),
-        # 'first_frame_index': 247,
-        # 'first_frame_time': '00:00:14',
-        # 'last_frame_index': 334,
-        # 'last_frame_time': '00:00:19',
-        # 'track_id': '2',
-        # 'violation_score': 0.0280686
 
-        pass
+    
 
     #table of contents----------------------------------------
     page_no = 1
