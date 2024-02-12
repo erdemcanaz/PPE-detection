@@ -1,4 +1,4 @@
-import datetime, json, uuid, pprint
+import datetime, json, uuid, pprint, io
 import cv2
 import scripts.svg_editor as svg_editor
 
@@ -123,7 +123,7 @@ def generate_report_EN(folder_path = None, report_config = None, all_sorted_trac
             insert= (0,0), size = svg_creator_object.get_size() , 
             cv2_image = cv2_image, 
             constant_proportions= True, 
-            quality_factor= 2
+            quality_factor= 1
         )
 
         page_no += 1
@@ -148,12 +148,14 @@ def generate_report_EN(folder_path = None, report_config = None, all_sorted_trac
             insert= (0,0), size = svg_creator_object.get_size() , 
             cv2_image = cv2_image, 
             constant_proportions= True, 
-            quality_factor= 2
+            quality_factor= 1
             )
 
             # This slice will get up to 3 elements, handling cases where there are fewer than 3 elements left
             current_tracks = all_sorted_tracks[i:i+3]
             for no, track_info in enumerate(current_tracks):
+                if track_info is None:
+                    continue
                 first_frame_date = track_info["first_frame_date"] #a datetime.datetime object
                 first_frame_index = track_info["first_frame_index"] 
                 first_frame_time = track_info["first_frame_time"] #str video timestamp
@@ -170,13 +172,21 @@ def generate_report_EN(folder_path = None, report_config = None, all_sorted_trac
                         x.append( float(info_dict["person_x"]) )
                         y.append( float(info_dict["person_y"]) )
 
+                x_filtered = []
+                y_filtered = []
+                for i in range(len(x)):
+                    if i+2 >= len(x):
+                        break
+                    
+                    x_filtered.append((x[i] + x[i+1] + x[i+2])/3)
+                    y_filtered.append((y[i] + y[i+1] + y[i+2])/3)
                 # Load your background image
                 bg_image = plt.imread(REGION_DATA["DEFAULT_TEMPLATE_PATHS"]['2D_MAP'][0])
 
                 # Create the plot
                 plt.figure(figsize=(8, 6))
                 plt.imshow(bg_image, extent=[0,10 , 0, 10])  # Adjust extent as needed
-                plt.scatter(x, y, color='black', s = 20)  # Plot data points on top of the background image
+                plt.scatter(x_filtered, y_filtered, color='black', s = 20)  # Plot data points on top of the background image
                 plt.axis('on')  # You can turn this off with 'off' if you don't want the axis
                 
                 plt.plot(x, y, color='black', label='Connections')  # Connect the nodes
@@ -186,7 +196,28 @@ def generate_report_EN(folder_path = None, report_config = None, all_sorted_trac
                 plt.scatter(x[-1], y[-1], color='red', s=60, edgecolor='black', label='End')  # End node
                 plt.legend()  # Show legend to label start and end nodes
 
-                plt.show()
+                #plt.show()
+
+                # Save the plot to a buffer
+                buf = io.BytesIO()
+                plt.savefig(buf, format='png')
+                buf.seek(0)
+                
+                # Read the buffer with OpenCV
+                img_buf_arr = np.frombuffer(buf.getvalue(), dtype=np.uint8)
+                plot_as_cv2_image = cv2.imdecode(img_buf_arr, 1)
+                
+                # Convert RGB to BGR
+                # plot_as_cv2_image = cv2.cvtColor(plot_as_cv2_image, cv2.COLOR_RGB2BGR)
+
+                svg_creator_object.embed_cv2_image_adjustable_resolution(
+                    filename = restricted_area_page_n_svg_path, 
+                    insert= (100,215+471*no), size = ("400px", "400px") , 
+                    cv2_image = plot_as_cv2_image, 
+                    constant_proportions= True, 
+                    quality_factor= 1
+                )
+                        
 
             page_no += 1
 
