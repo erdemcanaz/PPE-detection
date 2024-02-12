@@ -1,8 +1,9 @@
-import datetime, json, uuid
+import datetime, json, uuid, pprint
 import cv2
 import scripts.svg_editor as svg_editor
+import scripts.csv_dealers as csv_dealer
 
-def generate_report_EN(folder_path = None, report_config = None):
+def generate_report_EN(folder_path = None, report_config = None, all_sorted_tracks:list[dict] = None):
     REGION_DATA = None
     with open(report_config["region_info_path"], 'r') as file:
         REGION_DATA = json.load(file)
@@ -124,7 +125,60 @@ def generate_report_EN(folder_path = None, report_config = None):
 
         page_no += 1
 
-    #table of contents------------------------------------------------
+    #restricted area violations-------------------------------
+        
+    #TODO: append a page related to how the restricted are violation is calculated
+        
+    #-------------------
+    if report_config["check_restricted_area_violation"]:        
+        # cover_page_svg_path = f"{folder_path}/svg_exports/page_{page_no}_cover_page.svg"
+        # svg_creator_object.create_new_drawing(cover_page_svg_path, size=('1244', '1756px'))
+
+        # COVER_PAGE_TEMPLATE_EN_PATH = REGION_DATA["DEFAULT_TEMPLATE_PATHS"]["COVER_PAGE_TEMPLATE_EN"][0]
+        # cv2_image = cv2.imread(COVER_PAGE_TEMPLATE_EN_PATH, cv2.IMREAD_UNCHANGED)
+        
+        # svg_creator_object.embed_cv2_image_adjustable_resolution(
+        #     filename = cover_page_svg_path, 
+        #     insert= (0,0), size = svg_creator_object.get_size() , 
+        #     cv2_image = cv2_image, 
+        #     constant_proportions= True, 
+        #     quality_factor= 2
+        # )
+
+
+        RESTRICTED_AREA_VIOLATION_TEMPLATE = REGION_DATA["DEFAULT_TEMPLATE_PATHS"]["RESTRICTED_AREA_TEMPLATE_EN"][0]
+        cv2_image = cv2.imread(RESTRICTED_AREA_VIOLATION_TEMPLATE, cv2.IMREAD_UNCHANGED)
+
+        for i in range(0, len(all_sorted_tracks), 3):
+            # This slice will get up to 3 elements, handling cases where there are fewer than 3 elements left
+            restricted_area_page_n_svg_path = f"{folder_path}/svg_exports/page_{page_no}_restricted_area_violation_page.svg"
+            
+            svg_creator_object.embed_cv2_image_adjustable_resolution(
+            filename = restricted_area_page_n_svg_path, 
+            insert= (0,0), size = svg_creator_object.get_size() , 
+            cv2_image = cv2_image, 
+            constant_proportions= True, 
+            quality_factor= 2
+            )
+
+            for track_no, track_info in enumerate(current_tracks):
+
+                pass
+
+            current_tracks = all_sorted_tracks[i:i+3]
+            page_no += 1
+
+        # 'first_frame_date': datetime.datetime(2024, 1, 31, 8, 0, 14, 529412, tzinfo=datetime.timezone(datetime.timedelta(seconds=10800))),
+        # 'first_frame_index': 247,
+        # 'first_frame_time': '00:00:14',
+        # 'last_frame_index': 334,
+        # 'last_frame_time': '00:00:19',
+        # 'track_id': '2',
+        # 'violation_score': 0.0280686
+
+        pass
+
+    #table of contents----------------------------------------
     page_no = 1
 
     content_page_1_svg_path = f"{folder_path}/svg_exports/page_{page_no}_table_of_contents.svg"
@@ -157,6 +211,9 @@ def generate_report_EN(folder_path = None, report_config = None):
 
     #save all------------------------------------------------
     svg_creator_object.save_all()
+
+
+    #TODO: convert to PDF
 
 
 

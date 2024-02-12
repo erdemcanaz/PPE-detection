@@ -1,5 +1,12 @@
 import os,csv
 
+
+class CSV_importer():
+    def __init__(self, csv_file_path:None) -> None:
+        #TODO
+        pass
+        
+
 class CSV_Exporter():  
 
     def __init__(self, folder_path: str, file_name_wo_extension:str) -> None:

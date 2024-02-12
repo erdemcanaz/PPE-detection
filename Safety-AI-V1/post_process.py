@@ -4,13 +4,13 @@ import cv2
 import scripts.video_analyzer as video_analyzer
 import scripts.detect_pose as detect_pose
 import scripts.detect_safety_equipment as detect_safety_equipment
-import scripts.csv_exporter as csv_exporter
+import scripts.csv_dealers as csv_dealers
 import scripts.object_tracker as object_tracker
 
 
 def post_process_restriced_area(report_config: dict = None, pre_process_results: list[dict] = None, video_analyzer_object: video_analyzer = None):
-    tracking_csv_exporter_object = csv_exporter.CSV_Exporter(folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="post_process_tracking_results")
-    tracking_sorted_csv_exporter_object = csv_exporter.CSV_Exporter(folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="sorted_post_process_tracking_results")
+    tracking_csv_exporter_object = csv_dealers.CSV_Exporter(folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="post_process_tracking_results")
+    tracking_sorted_csv_exporter_object = csv_dealers.CSV_Exporter(folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="sorted_post_process_tracking_results")
 
     pose_detector_object = detect_pose.poseDetector(model_path=report_config["post_pose_detection_model_path"])
     object_tracker_object = object_tracker.TrackerSupervisor(max_age=5, max_px_distance=200, confidence_threshold=0.5)
@@ -133,8 +133,8 @@ def post_process_restriced_area(report_config: dict = None, pre_process_results:
 
     sorted_tracks = []
     for track_record_id, tracking_record in all_trackings.items():
-        left_side_max_point = 0.05 # (x_threshold - {x})*bbox_conf where x < x_threshold
-        right_side_max_point = 0.05 # ({x} - x_threshold)*bbox_conf where x > x_threshold
+        left_side_max_point = 0.3 # (x_threshold - {x})*bbox_conf where x < x_threshold
+        right_side_max_point = 0.1 # ({x} - x_threshold)*bbox_conf where x > x_threshold
         for track_record in tracking_record:
             person_x = float(track_record["person_x"])
 
@@ -142,7 +142,6 @@ def post_process_restriced_area(report_config: dict = None, pre_process_results:
             right_shoulder_confidence = float(track_record['right_shoulder_confidence'])
             left_shoulder_confidence = float(track_record['right_shoulder_confidence'])
             shoulder_confidence_multiplier = min(right_shoulder_confidence, left_shoulder_confidence)
-            print(shoulder_confidence_multiplier, right_shoulder_confidence, left_shoulder_confidence)
 
             if person_x < X_THRESHOLD:
                 person_x = max(person_x, X_MIN)
@@ -171,11 +170,11 @@ def post_process_restriced_area(report_config: dict = None, pre_process_results:
     for row in sorted_tracks:
         tracking_sorted_csv_exporter_object.append_row(row)
 
-    return all_rows
+    return all_rows,sorted_tracks
 
 def post_process_hard_hat(report_config: dict = None, pre_process_results: list[dict] = None, video_analyzer_object: video_analyzer = None):
-    hard_hat_csv_exporter_object = csv_exporter.CSV_Exporter( folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="post_process_safety_equipment_results")
-    hard_hat_sorted_csv_exporter_object = csv_exporter.CSV_Exporter( folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="sorted_post_process_safety_equipment_results")
+    hard_hat_csv_exporter_object = csv_dealers.CSV_Exporter( folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="post_process_safety_equipment_results")
+    hard_hat_sorted_csv_exporter_object = csv_dealers.CSV_Exporter( folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="sorted_post_process_safety_equipment_results")
     hard_hat_detector_object = detect_safety_equipment.safetyEquipmentDetector(model_path=report_config["hard_hat_detection_model_path"])
 
     #get the frames when a person(s) is detected

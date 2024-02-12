@@ -2,7 +2,7 @@ import json
 import cv2
 import scripts.video_analyzer as video_analyzer
 import scripts.detect_pose as detect_pose
-import scripts.csv_exporter as csv_exporter
+import scripts.csv_dealers as csv_dealers
 
 
 def pre_process(video_analyzer_object: video_analyzer = None, report_config: dict = None):
@@ -11,7 +11,7 @@ def pre_process(video_analyzer_object: video_analyzer = None, report_config: dic
 
     pose_detector_object = detect_pose.poseDetector(
         model_path=report_config["pre_pose_detection_model_path"])
-    csv_exporter_object = csv_exporter.CSV_Exporter(
+    csv_exporter_object = csv_dealers.CSV_Exporter(
         folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="pre_process_results")
 
     REGION_DATA = None
