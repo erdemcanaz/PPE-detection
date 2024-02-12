@@ -227,18 +227,19 @@ class MultiSVGCreator:
         self.drawings[filename].add(self.drawings[filename].image(href=data_uri, insert=insert, size=size))
 
     #text
-    def add_text(self, filename, insert, text, font_size='20px', font_family='Arial', fill_color='rgb(0, 0, 0)', stroke_color='rgb(0, 0, 0)', stroke_width=1.5):
+    def add_text(self, filename, insert, text, font_size='20px', font_family='Arial', fill_color='rgb(0, 0, 0)', stroke_color='rgb(0, 0, 0)', stroke_width=1.5, rotation_angle=0):
         """
-        Adds text to an SVG drawing using the svgwrite library.
+        Adds text to an SVG drawing using the svgwrite library, with an option to rotate the text.
 
         :param filename: The filename of the SVG to add the text to.
-        :param insert: tuple of the bottom-left x and y -coordinate for the text's position as a tuple (x,y)
+        :param insert: Tuple of the bottom-left x and y-coordinate for the text's position as a tuple (x,y).
         :param text: The text content to add.
         :param font_size: The font size of the text.
         :param font_family: The font family of the text.
         :param fill_color: The fill color of the text.
         :param stroke_color: The stroke color of the text.
         :param stroke_width: The stroke width of the text.
+        :param rotation_angle: The rotation angle of the text in degrees.(CW positive, CCW negative)
         """
         if filename not in self.drawings:
             print(f"Drawing with filename {filename} does not exist.")
@@ -247,11 +248,14 @@ class MultiSVGCreator:
         # Construct the style string with fill color, stroke color, and stroke width
         style = f'font-size: {font_size}; font-family: {font_family}; fill: {fill_color}; stroke: {stroke_color}; stroke-width: {stroke_width}px;'
 
-        # Create the text element with the specified attributes and style
-        text_element = svgwrite.text.Text(text, insert=insert, style=style)
+        # If a rotation is specified, add a rotation transform
+        transform = f'rotate({-rotation_angle}, {insert[0]}, {insert[1]})'
+
+        # Create the text element with the specified attributes, style, and transformation
+        text_element = svgwrite.text.Text(text, insert=insert, style=style, transform=transform)
 
         # Add the text element to the drawing
-        self.drawings[filename].add(text_element) 
+        self.drawings[filename].add(text_element)
 
     def add_text_with_width_limit(self, filename, insert, text, font_size='20px', font_family='Arial', fill_color='rgb(0, 0, 0)', stroke_color='rgb(0, 0, 0)', stroke_width=1.5, width_limit=100, line_height=20):
         """
