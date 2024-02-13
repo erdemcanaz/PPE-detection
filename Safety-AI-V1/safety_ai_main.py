@@ -53,6 +53,7 @@ if report_config["check_hard_hat_violation"]:
 #REPORT GENERATION
 from report_generator import generate_report_EN
 generate_report_EN(
+    video_analyzer_object = video_analyzer_object,
     report_config = report_config,
     folder_path= new_folder_path,
     all_sorted_tracks = all_sorted_tracks,

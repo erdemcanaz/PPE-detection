@@ -13,7 +13,7 @@ def post_process_restriced_area(report_config: dict = None, pre_process_results:
     tracking_sorted_csv_exporter_object = csv_dealers.CSV_Exporter(folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="sorted_post_process_tracking_results")
 
     pose_detector_object = detect_pose.poseDetector(model_path=report_config["post_pose_detection_model_path"])
-    object_tracker_object = object_tracker.TrackerSupervisor(max_age=5, max_px_distance=200, confidence_threshold=0.5)
+    object_tracker_object = object_tracker.TrackerSupervisor(max_age=7, max_px_distance=300, confidence_threshold=0.5)
 
     REGION_DATA = None
     with open(report_config["region_info_path"], 'r') as file:

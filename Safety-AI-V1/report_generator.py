@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def generate_report_EN(folder_path = None, report_config = None, all_sorted_tracks:list[dict] = None, all_tracking_rows:list[dict] = None):
+def generate_report_EN(video_analyzer_object = None, folder_path = None, report_config = None, all_sorted_tracks:list[dict] = None, all_tracking_rows:list[dict] = None):
     REGION_DATA = None
     with open(report_config["region_info_path"], 'r') as file:
         REGION_DATA = json.load(file)
@@ -163,7 +163,7 @@ def generate_report_EN(folder_path = None, report_config = None, all_sorted_trac
                 last_frame_time = track_info["last_frame_time"]
                 track_id = int(track_info["track_id"])
                 track_violation_score = track_info["violation_score"]
-
+        
                 str_date = first_frame_date.strftime(f"%d.%m.%Y | %H:%M:%S ({first_frame_time})")
                 x = []
                 y = []
@@ -208,8 +208,7 @@ def generate_report_EN(folder_path = None, report_config = None, all_sorted_trac
                 img_buf_arr = np.frombuffer(buf.getvalue(), dtype=np.uint8)
                 plot_as_cv2_image = cv2.imdecode(img_buf_arr, 1)
                 
-                # Convert RGB to BGR
-                # plot_as_cv2_image = cv2.cvtColor(plot_as_cv2_image, cv2.COLOR_RGB2BGR)
+                plt.close()
 
                 svg_creator_object.embed_cv2_image_adjustable_resolution(
                     filename = restricted_area_page_n_svg_path, 
@@ -247,11 +246,23 @@ def generate_report_EN(folder_path = None, report_config = None, all_sorted_trac
                     stroke_color= svg_creator_object.get_color('dark_blue'), 
                     stroke_width=1,
                     font_size='24px'
-                )                         
+                )       
+
+                frames_to_sample = [first_frame_index, (last_frame_index+first_frame_index)//2, last_frame_index ]
+                for counter, frame_index in enumerate(frames_to_sample):
+                    video_analyzer_object.set_current_frame_index(frame_index)
+                    frame = video_analyzer_object.get_current_frame()
+
+                    svg_creator_object.embed_cv2_image_adjustable_resolution(
+                        filename = restricted_area_page_n_svg_path, 
+                        insert= (500+250*counter+10,300+471*no), size = ("250px", "250px") , 
+                        cv2_image = frame, 
+                        constant_proportions= True, 
+                        quality_factor= 2
+                    )
+                                    
 
             page_no += 1
-
-    
 
     #table of contents----------------------------------------
     page_no = 1
