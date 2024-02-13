@@ -133,8 +133,8 @@ def post_process_restriced_area(report_config: dict = None, pre_process_results:
 
     sorted_tracks = []
     for track_record_id, tracking_record in all_trackings.items():
-        left_side_max_point = 0.3 # (x_threshold - {x})*bbox_conf where x < x_threshold
-        right_side_max_point = 0.1 # ({x} - x_threshold)*bbox_conf where x > x_threshold
+        left_side_max_point = 0.05 # (x_threshold - {x})*bbox_conf where x < x_threshold
+        right_side_max_point = 0.2 # ({x} - x_threshold)*bbox_conf where x > x_threshold
         for track_record in tracking_record:
             person_x = float(track_record["person_x"])
 

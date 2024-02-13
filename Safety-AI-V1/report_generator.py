@@ -164,6 +164,7 @@ def generate_report_EN(folder_path = None, report_config = None, all_sorted_trac
                 track_id = int(track_info["track_id"])
                 track_violation_score = track_info["violation_score"]
 
+                str_date = first_frame_date.strftime(f"%d.%m.%Y | %H:%M:%S ({first_frame_time})")
                 x = []
                 y = []
 
@@ -174,12 +175,12 @@ def generate_report_EN(folder_path = None, report_config = None, all_sorted_trac
 
                 x_filtered = []
                 y_filtered = []
-                for i in range(len(x)):
-                    if i+2 >= len(x):
+                for j in range(len(x)):
+                    if j+2 >= len(x):
                         break
                     
-                    x_filtered.append((x[i] + x[i+1] + x[i+2])/3)
-                    y_filtered.append((y[i] + y[i+1] + y[i+2])/3)
+                    x_filtered.append((x[j] + x[j+1] + x[j+2])/3)
+                    y_filtered.append((y[j] + y[j+1] + y[j+2])/3)
                 # Load your background image
                 bg_image = plt.imread(REGION_DATA["DEFAULT_TEMPLATE_PATHS"]['2D_MAP'][0])
 
@@ -217,10 +218,38 @@ def generate_report_EN(folder_path = None, report_config = None, all_sorted_trac
                     constant_proportions= True, 
                     quality_factor= 1
                 )
-                        
+
+                svg_creator_object.add_text(
+                    filename = restricted_area_page_n_svg_path, 
+                    text = str_date, 
+                    insert= (125,235+471*no), 
+                    fill_color = svg_creator_object.get_color('dark_blue'), 
+                    stroke_color= svg_creator_object.get_color('dark_blue'), 
+                    stroke_width=1,
+                    font_size='24px'
+                )
+
+                svg_creator_object.add_text(
+                    filename = restricted_area_page_n_svg_path, 
+                    text = f"%{track_violation_score*100:.1f}", 
+                    insert= (800,235+471*no), 
+                    fill_color = svg_creator_object.get_color('dark_blue'), 
+                    stroke_color= svg_creator_object.get_color('dark_blue'), 
+                    stroke_width=1,
+                    font_size='24px'
+                )       
+
+                svg_creator_object.add_text(
+                    filename = restricted_area_page_n_svg_path, 
+                    text = f"{i+1+no} / {len(all_sorted_tracks)}", 
+                    insert= (1060,235+471*no), 
+                    fill_color = svg_creator_object.get_color('dark_blue'), 
+                    stroke_color= svg_creator_object.get_color('dark_blue'), 
+                    stroke_width=1,
+                    font_size='24px'
+                )                         
 
             page_no += 1
-
 
     
 
