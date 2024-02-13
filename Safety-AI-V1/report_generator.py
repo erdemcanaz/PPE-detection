@@ -15,7 +15,7 @@ def generate_report_EN(video_analyzer_object = None, folder_path = None, report_
     page_no = 0
     #cover page------------------------------------------------
     cover_page_svg_path = f"{folder_path}/svg_exports/page_{page_no}_cover_page.svg"
-    svg_creator_object.create_new_drawing(cover_page_svg_path, size=('1244', '1756px'))
+    svg_creator_object.create_new_drawing(cover_page_svg_path, size=('1244px', '1756px'))
 
     COVER_PAGE_TEMPLATE_EN_PATH = REGION_DATA["DEFAULT_TEMPLATE_PATHS"]["COVER_PAGE_TEMPLATE_EN"][0]
     cv2_image = cv2.imread(COVER_PAGE_TEMPLATE_EN_PATH, cv2.IMREAD_UNCHANGED)
@@ -115,7 +115,7 @@ def generate_report_EN(video_analyzer_object = None, folder_path = None, report_
     region_specific_info_templates = REGION_DATA["DEFAULT_TEMPLATE_PATHS"]["REGIONAL_INFO_TEMPLATE_EN"]
     for template_path in region_specific_info_templates:
         regional_info_svg_path = f"{folder_path}/svg_exports/page_{page_no}_regional_info.svg"
-        svg_creator_object.create_new_drawing(regional_info_svg_path, size=('1244', '1756px'))
+        svg_creator_object.create_new_drawing(regional_info_svg_path, size=('1244px', '1756px'))
 
         cv2_image = cv2.imread(template_path, cv2.IMREAD_UNCHANGED)
         svg_creator_object.embed_cv2_image_adjustable_resolution(
@@ -141,7 +141,7 @@ def generate_report_EN(video_analyzer_object = None, folder_path = None, report_
         for i in range(0, len(all_sorted_tracks), 3):
             #Render restricted area detection page
             restricted_area_page_n_svg_path = f"{folder_path}/svg_exports/page_{page_no}_restricted_area_violation_page.svg"
-            svg_creator_object.create_new_drawing(restricted_area_page_n_svg_path, size=('1244', '1756px'))
+            svg_creator_object.create_new_drawing(restricted_area_page_n_svg_path, size=('1244px', '1756px'))
 
             svg_creator_object.embed_cv2_image_adjustable_resolution(
             filename = restricted_area_page_n_svg_path, 
@@ -272,10 +272,11 @@ def generate_report_EN(video_analyzer_object = None, folder_path = None, report_
         HARD_HAT_VIOLATION_TEMPLATE = REGION_DATA["DEFAULT_TEMPLATE_PATHS"]["HARD_HAT_TEMPLATE_EN"][0]
         cv2_image = cv2.imread(HARD_HAT_VIOLATION_TEMPLATE, cv2.IMREAD_UNCHANGED)
         
-        for i in range(0, len(all_sorted_hard_hat_rows), 16):
+        number_of_images_per_page = 24
+        for i in range(0, len(all_sorted_hard_hat_rows), number_of_images_per_page):
 
             hard_hat_violation_page_n_svg_path = f"{folder_path}/svg_exports/page_{page_no}_hard_hat_violation_page.svg"
-            svg_creator_object.create_new_drawing(hard_hat_violation_page_n_svg_path, size=('1244', '1756px'))
+            svg_creator_object.create_new_drawing(hard_hat_violation_page_n_svg_path, size=('1244px', '1756px'))
 
             svg_creator_object.embed_cv2_image_adjustable_resolution(
                 filename = hard_hat_violation_page_n_svg_path, 
@@ -285,7 +286,7 @@ def generate_report_EN(video_analyzer_object = None, folder_path = None, report_
                 quality_factor= 1
             )
              
-            hard_hat_violation_batch = all_sorted_hard_hat_rows[i:i+16]
+            hard_hat_violation_batch = all_sorted_hard_hat_rows[i:i+number_of_images_per_page]
             for counter, hard_hat_violation_info in enumerate(hard_hat_violation_batch):
                 row_no = counter // 4
                 column_no = counter % 4
@@ -310,7 +311,7 @@ def generate_report_EN(video_analyzer_object = None, folder_path = None, report_
 
                 svg_creator_object.add_text(
                     filename = hard_hat_violation_page_n_svg_path, 
-                    text = f"%{violation_score*100:.1f} ({i*16+counter+1}/{len(all_sorted_hard_hat_rows)})", 
+                    text = f"%{violation_score*100:.1f} ({i}/{len(all_sorted_hard_hat_rows)})", 
                     insert=(50 +250*column_no, (200 + 250 * row_no)-2),
                     fill_color = svg_creator_object.get_color('dark_blue'), 
                     stroke_color= svg_creator_object.get_color('dark_blue'), 
@@ -345,7 +346,7 @@ def generate_report_EN(video_analyzer_object = None, folder_path = None, report_
     page_no = 1
     
     content_page_1_svg_path = f"{folder_path}/svg_exports/page_{page_no}_table_of_contents.svg"
-    svg_creator_object.create_new_drawing(content_page_1_svg_path, size=('1244', '1756px'))
+    svg_creator_object.create_new_drawing(content_page_1_svg_path, size=('1244px', '1756px'))
 
     CONTENT_PAGE_1_TEMPLATE_EN_PATH = REGION_DATA["DEFAULT_TEMPLATE_PATHS"]["CONTENT_PAGE_TEMPLATE_EN"][0]
     cv2_image = cv2.imread(CONTENT_PAGE_1_TEMPLATE_EN_PATH, cv2.IMREAD_UNCHANGED)
@@ -360,7 +361,7 @@ def generate_report_EN(video_analyzer_object = None, folder_path = None, report_
     page_no += 1
     #----------
     content_page_2_svg_path = f"{folder_path}/svg_exports/page_{page_no}_table_of_contents.svg"
-    svg_creator_object.create_new_drawing(content_page_2_svg_path, size=('1244', '1756px'))
+    svg_creator_object.create_new_drawing(content_page_2_svg_path, size=('1244px', '1756px'))
 
     CONTENT_PAGE_2_TEMPLATE_EN_PATH = REGION_DATA["DEFAULT_TEMPLATE_PATHS"]["CONTENT_PAGE_TEMPLATE_EN"][0] = REGION_DATA["DEFAULT_TEMPLATE_PATHS"]["CONTENT_PAGE_TEMPLATE_EN"][1]
     cv2_image = cv2.imread(CONTENT_PAGE_2_TEMPLATE_EN_PATH, cv2.IMREAD_UNCHANGED)
@@ -372,11 +373,61 @@ def generate_report_EN(video_analyzer_object = None, folder_path = None, report_
         quality_factor= 2
     )    
 
-    #save all------------------------------------------------
+    #save all svg files------------------------------------------------
     svg_creator_object.save_all()
+    
+
+    #Convert to PDF----------------------------------------------------
+
+    from svglib.svglib import svg2rlg
+    from reportlab.graphics import renderPDF
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import A4
+    import os
 
 
-    #TODO: convert to PDF
+    svg_folder = f"{folder_path}/svg_exports/"  # Adjust this to the path where your SVG files are located
+    output_pdf_file = f"{folder_path}/{report_config['REPORT_NAME']}"  # The name of the combined PDF file you want to create
+
+    # List all SVG files following the naming convention "page_i_......."
+    svg_files = sorted([f for f in os.listdir(svg_folder) if f.startswith('page_') and f.endswith('.svg')],
+                    key=lambda x: int(x.split('_')[1]))
+                    
+    page_width, page_height = A4  # A4 size is 595 x 842 points by default
+    
+    c = canvas.Canvas(output_pdf_file, pagesize=A4)
+    
+    for svg_file in svg_files:
+        drawing = svg2rlg(os.path.join(svg_folder, svg_file))
+        
+        # Original SVG dimensions
+        original_width_px, original_height_px = 1244,1756  # Known SVG dimensions in pixels
+        # Convert pixels to points for ReportLab (1 point = 1.33333 pixels approximately)
+        original_width = original_width_px * (72 / 96)
+        original_height = original_height_px * (72 / 96)
+        
+        # Calculate scale to fit the SVG in the A4 page size
+        scale_width = page_width / original_width
+        scale_height = page_height / original_height
+        scale = min(scale_width, scale_height)
+        scale = scale * 0.75
+        
+        # Apply scaling
+        drawing.width, drawing.height = drawing.width * scale, drawing.height * scale
+        drawing.scale(scale, scale)
+
+        # Center the drawing (optional)
+        x_position = (page_width - drawing.width) / 2
+        y_position = (page_height - drawing.height) / 2
+        
+        renderPDF.draw(drawing, c, x_position, y_position)
+        
+        # Create a new page for the next SVG
+        c.showPage()
+    
+    c.save()
+    print(f"Combined PDF saved as: {output_pdf_file}")
+
 
 
 

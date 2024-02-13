@@ -17,7 +17,7 @@ class MultiSVGCreator:
     }
 
     #functionalities
-    def create_new_drawing(self, filename:str=None, size=('1244', '1756px')):
+    def create_new_drawing(self, filename:str=None, size=('1244px', '1756px')):
         """        
         Create or modify an SVG drawing. Resizes the existing SVG if it exists, or creates a new one.
 
