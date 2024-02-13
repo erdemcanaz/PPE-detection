@@ -278,7 +278,7 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
     for row in all_rows_sorted:
         hard_hat_sorted_csv_exporter_object.append_row(row)
 
-    return all_rows
+    return all_rows,all_rows_sorted
 
 
 

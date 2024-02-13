@@ -42,9 +42,11 @@ if report_config["check_restricted_area_violation"]:
         video_analyzer_object = video_analyzer_object,
     )
 
+all_hard_hat_rows = None
+all_sorted_hard_hat_rows = None
 if report_config["check_hard_hat_violation"]:
     from post_process import post_process_hard_hat
-    post_process_hard_hat(
+    all_hard_hat_rows, all_sorted_hard_hat_rows = post_process_hard_hat(
         pre_process_results = pre_process_results,
         report_config = report_config, 
         video_analyzer_object = video_analyzer_object,
@@ -57,6 +59,8 @@ generate_report_EN(
     report_config = report_config,
     folder_path= new_folder_path,
     all_sorted_tracks = all_sorted_tracks,
-    all_tracking_rows = all_tracking_rows
+    all_tracking_rows = all_tracking_rows,
+    all_sorted_hard_hat_rows = all_sorted_hard_hat_rows,
+    all_hard_hat_rows = all_hard_hat_rows
 )
 

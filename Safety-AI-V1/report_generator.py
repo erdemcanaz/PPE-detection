@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def generate_report_EN(video_analyzer_object = None, folder_path = None, report_config = None, all_sorted_tracks:list[dict] = None, all_tracking_rows:list[dict] = None):
+def generate_report_EN(video_analyzer_object = None, folder_path = None, report_config = None, all_sorted_tracks:list[dict] = None, all_tracking_rows:list[dict] = None, all_sorted_hard_hat_rows:list[dict] = None, all_hard_hat_rows:list[dict] = None):
     REGION_DATA = None
     with open(report_config["region_info_path"], 'r') as file:
         REGION_DATA = json.load(file)
@@ -132,7 +132,7 @@ def generate_report_EN(video_analyzer_object = None, folder_path = None, report_
         
     #TODO: append a page related to how the restricted are violation is calculated
         
-    #-------------------
+    #--------------
     if report_config["check_restricted_area_violation"]:        
 
         RESTRICTED_AREA_VIOLATION_TEMPLATE = REGION_DATA["DEFAULT_TEMPLATE_PATHS"]["RESTRICTED_AREA_TEMPLATE_EN"][0]
@@ -253,20 +253,97 @@ def generate_report_EN(video_analyzer_object = None, folder_path = None, report_
                     video_analyzer_object.set_current_frame_index(frame_index)
                     frame = video_analyzer_object.get_current_frame()
 
+                    kernel_size = report_config["report_blur_kernel_size"]
+                    blurred_frame = cv2.GaussianBlur(frame, (kernel_size, kernel_size), 0)
                     svg_creator_object.embed_cv2_image_adjustable_resolution(
                         filename = restricted_area_page_n_svg_path, 
-                        insert= (500+250*counter+10,300+471*no), size = ("250px", "250px") , 
-                        cv2_image = frame, 
+                        insert= (475+275*counter,300+471*no), size = ("250px", "250px") , 
+                        cv2_image = blurred_frame, 
                         constant_proportions= True, 
-                        quality_factor= 2
-                    )
-                                    
+                        quality_factor= 1
+                    )                                    
+
+            page_no += 1
+
+
+    #Hard-hat violations-------------------------------------
+    if report_config["check_hard_hat_violation"]: 
+
+        HARD_HAT_VIOLATION_TEMPLATE = REGION_DATA["DEFAULT_TEMPLATE_PATHS"]["HARD_HAT_TEMPLATE_EN"][0]
+        cv2_image = cv2.imread(HARD_HAT_VIOLATION_TEMPLATE, cv2.IMREAD_UNCHANGED)
+        
+        for i in range(0, len(all_sorted_hard_hat_rows), 16):
+
+            hard_hat_violation_page_n_svg_path = f"{folder_path}/svg_exports/page_{page_no}_hard_hat_violation_page.svg"
+            svg_creator_object.create_new_drawing(hard_hat_violation_page_n_svg_path, size=('1244', '1756px'))
+
+            svg_creator_object.embed_cv2_image_adjustable_resolution(
+                filename = hard_hat_violation_page_n_svg_path, 
+                insert= (0,0), size = svg_creator_object.get_size() , 
+                cv2_image = cv2_image, 
+                constant_proportions= True, 
+                quality_factor= 1
+            )
+             
+            hard_hat_violation_batch = all_sorted_hard_hat_rows[i:i+16]
+            for counter, hard_hat_violation_info in enumerate(hard_hat_violation_batch):
+                row_no = counter // 4
+                column_no = counter % 4
+
+                bbox_confidence = hard_hat_violation_info["bbox_confidence"]
+                bbox_coordinates = hard_hat_violation_info["bbox_coordinates"]
+                current_second =hard_hat_violation_info["current_second"]
+                hard_hat_detection_date = hard_hat_violation_info["date"]
+                frame_index = hard_hat_violation_info["frame_index"]
+                is_safety_equipment_present = hard_hat_violation_info["is_safety_equipment_present"]
+                safety_equipment_bbox_center = hard_hat_violation_info["safety_equipment_bbox_center"]
+                safety_equipment_class = hard_hat_violation_info["safety_equipment_class"]
+                safety_equipment_confidence = hard_hat_violation_info["safety_equipment_confidence"]
+                video_time = hard_hat_violation_info["video_time"]
+                violation_score = hard_hat_violation_info["violation_score"]
+
+                video_analyzer_object.set_current_frame_index(frame_index)
+                frame = video_analyzer_object.get_current_frame()
+                frame_section = frame[bbox_coordinates[1]:bbox_coordinates[3], bbox_coordinates[0]:bbox_coordinates[2]]
+                
+                str_date = hard_hat_detection_date.strftime(f"%d.%m.%Y | %H:%M:%S ({video_time})")
+
+                svg_creator_object.add_text(
+                    filename = hard_hat_violation_page_n_svg_path, 
+                    text = f"%{violation_score*100:.1f} ({i*16+counter+1}/{len(all_sorted_hard_hat_rows)})", 
+                    insert=(50 +250*column_no, (200 + 250 * row_no)-2),
+                    fill_color = svg_creator_object.get_color('dark_blue'), 
+                    stroke_color= svg_creator_object.get_color('dark_blue'), 
+                    stroke_width=1,
+                    font_size='10px'
+                )
+
+                svg_creator_object.add_text(
+                    filename = hard_hat_violation_page_n_svg_path, 
+                    text = f"{str_date}", 
+                    insert=(50 +250*column_no, (200 + 250 * row_no) -15),
+                    fill_color = svg_creator_object.get_color('dark_blue'), 
+                    stroke_color= svg_creator_object.get_color('dark_blue'), 
+                    stroke_width=1,
+                    font_size='10px'
+                )
+
+                kernel_size = report_config["report_blur_kernel_size"]
+                blurred_frame = cv2.GaussianBlur(frame_section, (kernel_size, kernel_size), 0)                
+                svg_creator_object.embed_cv2_image_adjustable_resolution(
+                    filename=hard_hat_violation_page_n_svg_path,
+                    insert=(50 +250*column_no, 200 + 250 * row_no),
+                    size=("200px", "200px"),
+                    cv2_image=blurred_frame,
+                    constant_proportions=True,
+                    quality_factor=1
+                )
 
             page_no += 1
 
     #table of contents----------------------------------------
     page_no = 1
-
+    
     content_page_1_svg_path = f"{folder_path}/svg_exports/page_{page_no}_table_of_contents.svg"
     svg_creator_object.create_new_drawing(content_page_1_svg_path, size=('1244', '1756px'))
 
