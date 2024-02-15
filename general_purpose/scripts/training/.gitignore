@@ -1,7 +1,7 @@
 *videos/*
 *images/*
 *models/*
-*data/*
+data/*
 *training_results/*
 
 !training_results
