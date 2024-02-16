@@ -59,10 +59,10 @@ def detect_and_update_frame(frame, conf_human = 0.2):
 
             # Apply thresholding to binarize the image
             # You might need to adjust the method and parameters depending on your image
-            _, binary_image = cv2.threshold(gray_image, 170, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            _, binary_image = cv2.threshold(gray_image, 100, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
             # Apply dilation and erosion to remove some noise
-            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 1))
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
             processed_image = cv2.morphologyEx(binary_image, cv2.MORPH_CLOSE, kernel)
 
             # Run Tesseract OCR on the preprocessed image
@@ -85,7 +85,7 @@ def detect_and_update_frame(frame, conf_human = 0.2):
 
 if __name__ == "__main__":
     # Open the video file
-    cap = cv2.VideoCapture(0,  cv2.CAP_DSHOW)
+    cap = cv2.VideoCapture(1,  cv2.CAP_DSHOW)
 
     while True:
         ret, frame = cap.read()

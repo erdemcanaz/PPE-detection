@@ -9,10 +9,8 @@ def pre_process(video_analyzer_object: video_analyzer = None, report_config: dic
 
     # ==============================INITIALIZE OBJECTS AND CONFIGS===========================
 
-    pose_detector_object = detect_pose.poseDetector(
-        model_path=report_config["pre_pose_detection_model_path"])
-    csv_exporter_object = csv_dealers.CSV_Exporter(
-        folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="pre_process_results")
+    pose_detector_object = detect_pose.poseDetector(model_path=report_config["pre_pose_detection_model_path"])
+    csv_exporter_object = csv_dealers.CSV_Exporter(folder_path=report_config["new_folder_path_dynamic_key"], file_name_wo_extension="pre_process_results")
 
     REGION_DATA = None
     with open(report_config["region_info_path"], 'r') as file:
