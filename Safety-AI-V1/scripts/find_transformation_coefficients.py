@@ -104,7 +104,7 @@
 # A * X = B 
 # using least squares method which will give you the unknowns
 
-if __name__ == "__main__":
+def calculate_transformation_coefficients():
     import numpy as np
     import pprint
 
