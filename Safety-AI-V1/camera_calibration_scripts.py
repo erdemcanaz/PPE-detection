@@ -91,18 +91,14 @@ if __name__ == "__main__":
     elif number == "2":
         find_transformation_coefficients.calculate_transformation_coefficients()
     elif number == "3":
-        A= np.array([
-            [0.3886,-0.6933, -3.2195],
-            [0.1766, 0.2867, -2.4634],
-            [0.2500, 0.5000, -2.5610]
-            ]
-        )
-
-        B = np.array(
-            [
-                [-2.5756],
-                [-1.9707],
-                [-2.0490]
-            ]
-        )
+        A = np.array([
+        [0.3867, -0.6933,6.2634],
+        [0.1767, 0.2867,-3.4293],
+        [0.2500, 0.5000,-4.7561]
+        ])
+        B = np.array([
+                [5.0107],
+                [-2.7434],
+                [-3.8049]
+        ])
         test_matrices(A=A, B=B, start_from_sec=1722,camera_horizontal_angle = 105.5, camera_vertical_angle = 57.5)

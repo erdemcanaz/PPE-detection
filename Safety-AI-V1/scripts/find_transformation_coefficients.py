@@ -161,22 +161,13 @@ def calculate_transformation_coefficients():
                     print(f"{row_name:<15}: {row[0]:.4f}")
 
 
-                A_matrix_pretty = f"""A = np.array([
-                [{x[0]:.4f}, {x[1]:.4f},{x[2]:.4f}],
-                [{x[3]:.4f}, {x[4]:.4f},{x[5]:.4f}],
-                [{x[6]:.4f}, {x[7]:.4f},{x[8]:.4f}],
-                ])"""
+                A_matrix_pretty = f"A = np.array([\n\t[{x[0][0]:.4f}, {x[1][0]:.4f},{x[2][0]:.4f}],\n\t[{x[3][0]:.4f}, {x[4][0]:.4f},{x[5][0]:.4f}],\n\t[{x[6][0]:.4f}, {x[7][0]:.4f},{x[8][0]:.4f}]\n])"
 
-                B_matrix_pretty = f"""B = np.array([
-                [{x[9]:.4f}],
-                [{x[10]:.4f}],
-                [{x[11]:.4f}],
-                ])
+                B_matrix_pretty = f"B = np.array([\n\t[{x[9][0]:.4f}],\n\t[{x[10][0]:.4f}],\n\t[{x[11][0]:.4f}]\n])"
 
-                """
                 print(A_matrix_pretty)
                 print(B_matrix_pretty)
-                
+
                 break
           
 
