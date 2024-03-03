@@ -17,15 +17,16 @@ def generate_data_points(start_from_sec = 0, camera_horizontal_angle = 105.5, ca
 
     video_analyzer_object.set_current_seconds(start_from_sec)
 
-    while video_analyzer_object.fast_forward_seconds(0.1):
+    while video_analyzer_object.fast_forward_seconds(1):
         sampled_frame = video_analyzer_object.get_current_frame()
         pose_detector_object.predict_frame(frame=sampled_frame,  h_angle = camera_horizontal_angle, v_angle = camera_vertical_angle)
 
         A= np.array([[1,0,0],[0,1,0],[0,0,1]])
         B= np.array([[0],[0],[0]])
-        transformation_matrices = (A, B)
+        T= np.array([0,0,0])
+        transformation_matrices = (A, B, T)
 
-        pose_detector_object.approximate_prediction_distance(box_condifence_threshold=0.20, distance_threshold=1, shoulders_confidence_threshold= 0.5, transformation_matrices=transformation_matrices)
+        pose_detector_object.approximate_prediction_distance(box_condifence_threshold=0.20, distance_threshold=1, shoulders_confidence_threshold= 0.85, transformation_matrices=transformation_matrices)
         pose_results = pose_detector_object.get_prediction_results()
         print(pose_results)
         print(video_analyzer_object.get_current_seconds())
@@ -48,8 +49,8 @@ def generate_data_points(start_from_sec = 0, camera_horizontal_angle = 105.5, ca
     cv2.destroyAllWindows()
 
         
-def test_matrices(A=None, B=None, start_from_sec = 0, camera_horizontal_angle = 105.5, camera_vertical_angle = 57.5):
-    model_path = "yolo_models/yolov8x-pose.pt"
+def test_matrices(A=None, B=None, T=np.array([0,0,0]), start_from_sec = 0, camera_horizontal_angle = 105.5, camera_vertical_angle = 57.5):
+    model_path = "yolo_models/yolov8x-pose-p6.pt"
     video_path = input("Enter the path to the video: ")
 
     pose_detector_object = detect_pose.poseDetector(model_path=model_path)
@@ -63,7 +64,7 @@ def test_matrices(A=None, B=None, start_from_sec = 0, camera_horizontal_angle = 
         sampled_frame = video_analyzer_object.get_current_frame()
         pose_detector_object.predict_frame(frame=sampled_frame,  h_angle = camera_horizontal_angle, v_angle = camera_vertical_angle)
         
-        transformation_matrices = (A, B)
+        transformation_matrices = (A, B, T)
 
         pose_detector_object.approximate_prediction_distance(box_condifence_threshold=0.20, distance_threshold=1, shoulders_confidence_threshold= 0.5, transformation_matrices=transformation_matrices)
         pose_results = pose_detector_object.get_prediction_results()
@@ -85,20 +86,22 @@ def test_matrices(A=None, B=None, start_from_sec = 0, camera_horizontal_angle = 
 
         
 if __name__ == "__main__":
-    number = input("Pick a number:\n (1) get-samples\n (2)calculate-matrices\n (3)test matrices\nYour number:")
+    start_from_sec = (24.5)*60
+    number = input("Pick a number:\n (1) Get-samples\n (2) Calculate-matrices\n (3) Test matrices\nYour number:")
     if number == "1":
-        generate_data_points(start_from_sec=690,camera_horizontal_angle = 105.5, camera_vertical_angle = 57.5)
+        generate_data_points(start_from_sec=start_from_sec, camera_horizontal_angle = 105.5, camera_vertical_angle = 57.5)
     elif number == "2":
         find_transformation_coefficients.calculate_transformation_coefficients()
     elif number == "3":
         A = np.array([
-        [0.3867, -0.6933,6.2634],
-        [0.1767, 0.2867,-3.4293],
-        [0.2500, 0.5000,-4.7561]
+        [0.1021, -1.0055,-4.3338],
+        [-0.4965, 0.1079,-1.1563],
+        [-0.5282, 0.2668,-4.5493]
         ])
         B = np.array([
-                [5.0107],
-                [-2.7434],
-                [-3.8049]
+                [6.3788],
+                [-2.4981],
+                [5.3013]
         ])
-        test_matrices(A=A, B=B, start_from_sec=1722,camera_horizontal_angle = 105.5, camera_vertical_angle = 57.5)
+        T = np.array([2.84, -28.47, 0])
+        test_matrices(A=A, B=B, T=T, start_from_sec=start_from_sec,camera_horizontal_angle = 105.5, camera_vertical_angle = 57.5)

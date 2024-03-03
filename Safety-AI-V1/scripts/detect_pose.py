@@ -184,16 +184,15 @@ class poseDetector():
                 #rs,ls,lh triangle error
                 error_2 = (d_rs_ls - poseDetector.SHOULDER_TO_SHOULDER)**2 + (d_ls_lh - poseDetector.SHOULDER_TO_HIP)**2 + (d_rs_lh - poseDetector.SHOULDER_TO_COUNTER_HIP)**2
 
-                error = error_1 + error_2
+                error = error_1+ error_2
                 return error
             
             #optimize the triangle
             tolerance = 1e-6
-            bounds = [(0, 25), (0, 25), (0, 25), (0, 25)] #
             initial_guess = [5,5,5,5] 
             unit_vectors = [rs_uv, ls_uv, rh_uv, lh_uv]
             #NOTE: never remove comma after unit_vectors. Othewise it will be interpreted as a tuple
-            minimizer_result = minimize(minimizer_function, initial_guess, args=( unit_vectors, ), method='L-BFGS-B', tol=tolerance, bounds = bounds)
+            minimizer_result = minimize(minimizer_function, initial_guess, args=( unit_vectors, ), method='L-BFGS-B', tol=tolerance)
 
             if minimizer_result.success == True:
                 # k_rs, k_ls, k_rh, k_lh = unknowns
@@ -215,10 +214,11 @@ class poseDetector():
                 #v_belly = A(world_coordinate) + C
                 A = transformation_matrices[0]
                 C = transformation_matrices[1]
+                T = transformation_matrices[2] if len(transformation_matrices) >= 3 else [0,0,0]
+
 
                 v_belly = np.array(v_belly)
                 v_belly = np.reshape(v_belly, (3,1))
-
 
                 if d_belly > distance_threshold:
                     result["is_coordinated_wrt_camera"] = True       
@@ -226,6 +226,9 @@ class poseDetector():
                     result["belly_distance_wrt_camera"] = d_belly
 
                     world_coordinate = np.linalg.pinv(A) @ (v_belly - C)
+                    world_coordinate[0][0]= world_coordinate[0][0] + T[0]
+                    world_coordinate[1][0]= world_coordinate[1][0] + T[1]
+                    world_coordinate[2][0]= world_coordinate[2][0] + T[2]
                     result["belly_coordinate_wrt_world_frame"] = world_coordinate
                     result["belly_distance_wrt_world_frame"] = math.sqrt(world_coordinate[0][0]**2 + world_coordinate[1][0]**2 + world_coordinate[2][0]**2)
                     result["is_coordinated_wrt_world_frame"] = True
@@ -291,8 +294,8 @@ class poseDetector():
                     blurred_roi = cv2.GaussianBlur(roi, (blur_kernel_size, blur_kernel_size), 0)
                     frame[y1:y2, x1:x2] = blurred_roi
 
-                if result["is_coordinated_wrt_world_frame"]:
-                    cv2.putText(frame, f"{belly_distance:.1f}m : ({belly_vector[0][0]:.1f}, {belly_vector[1][0]:.1f}, {belly_vector[2][0]:.1f})", (int(result["bbox"][0]), int(result["bbox"][1])), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2, cv2.LINE_AA)
+                if result["is_coordinated_wrt_world_frame"]:                  
+                    cv2.putText(frame, f"{belly_distance:.1f}m : ({belly_vector[0][0]:.2f}, {belly_vector[1][0]:.2f}, {belly_vector[2][0]:.2f})", (int(result["bbox"][0]), int(result["bbox"][1])), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2, cv2.LINE_AA)
                 else:
                     cv2.putText(frame, f"{class_name}", (int(result["bbox"][0]), int(result["bbox"][1])), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2, cv2.LINE_AA)
 
