@@ -1,0 +1,7 @@
+# Ignore everything in the models directory
+yolo_models/*
+images/*
+
+# Except the models directory itself and the .gitkeep file
+!yolo_models/.gitkeep
+!images/.gitkeep
