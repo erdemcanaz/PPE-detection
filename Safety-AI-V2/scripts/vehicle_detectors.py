@@ -4,7 +4,7 @@ import time
 
 from ultralytics import YOLO
 
-class forkliftDetector:
+class ForkliftDetector:
     def __init__(self, model_path:str)-> None:          
         self.MODEL_PATH = model_path        
         self.yolo_object = YOLO( self.MODEL_PATH )   
