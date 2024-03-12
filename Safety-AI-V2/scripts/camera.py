@@ -14,7 +14,11 @@ class Camera():
                 break
         if self.CAMERA_CONFIGURATION == None:
             raise Exception("Camera Configuration not found")
-        
+
+    def get_camera_view_angles(self):
+        #The camera view angles are in degrees.
+        return (self.CAMERA_CONFIGURATION["camera_view_angles"]["h_angle"], self.CAMERA_CONFIGURATION["camera_view_angles"]["v_angle"])
+     
     def get_camera_position_wrt_origin(self):
         #Note that the camera position is only in 2D. The z-coordinate is assumed to be 0.        
         return np.array(matrix_T = np.array(self.CAMERA_CONFIGURATION["camera_matrices"]["T_matrix"]))

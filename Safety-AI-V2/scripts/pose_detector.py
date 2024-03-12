@@ -2,64 +2,41 @@ from ultralytics import YOLO
 import cv2,math,time,os
 import time
 
+from scripts.camera import Camera
+
 from scipy.optimize import minimize
 import numpy as np
 
 class PoseDetector(): 
+    #keypoints detected by the model in the detection order
     KEYPOINT_NAMES = ["left_eye", "rigt_eye", "nose", "left_ear", "right_ear", "left_shoulder", "right_shoulder", "left_elbow" ,"right_elbow","left_wrist", "right_wrist", "left_hip", "right_hip", "left_knee", "right_knee", "left_ankle", "right_ankle"]
     
-    #approximate distances between the keypoints of a person in meters
+    #approximate distances between the keypoints of a person in meters (1.75m)
     SHOULDER_TO_SHOULDER = 0.36 
     SHOULDER_TO_HIP = 0.48 
     SHOULDER_TO_COUNTER_HIP = 0.53  
     SHOULDER_TO_ELBOW = 0.26
 
-    def __init__(self, model_path : str ) -> None:
-        # Check if the file exists
-        if os.path.exists(model_path):
-        # Check if the file has the specified extension
-            _, file_extension = os.path.splitext(model_path)
-            if file_extension != ".pt":
-                raise ValueError(f"The model file should have the extension '.pt'.")
-        else:
-            raise FileNotFoundError(f"The model file does not exist.")
-
+    def __init__(self, model_path : str ) -> None:      
         self.MODEL_PATH = model_path        
         self.yolo_object = YOLO( self.MODEL_PATH, verbose= False)        
-        self.prediction_results = None
-        self._clear_prediction_results()
-    
-    def _clear_prediction_results(self):
-        self.prediction_results = {
-            "frame":None, #The frame that was predicted
-            "time_stamp":0, #time.time() value indicating when this prediction happend
-            "frame_shape": [0,0],
-            "speed_results": {
-                "preprocess": None,
-                "inference": None,
-                "postprocess": None
-            },
-            "predictions":[
-                # The format of the prediction dictionary is specified in self._PREDICTION_DICT_TEMPLATE()
-            ]
-        }
+        self.recent_prediction_results = None # This will be a list of dictionaries, each dictionary will contain the prediction results for a single detection
 
-    def _PREDICTION_DICT_TEMPLATE(self):
-        empty_prediction_dict ={                         
-                    "class_index":0,
-                    "class_name":"NoName",
-                    "bbox_confidence":0,
-                    "bbox": [0,0,0,0], # Bounding box in the format [x1,y1,x2,y2]
-                    "bbox_pixel_area": 0,
-                    "is_coordinated_wrt_camera": False, # True if the coordinates are wrt the camera, False if they are wrt the frame
-                    "belly_coordinate_wrt_camera": np.array([[0],[0],[0]]), # [x,y,z] coordinates of the object wrt the camera
-                    "belly_distance_wrt_camera": 0, # distance between the camera and the object in meters
+    def get_empty_prediction_dict_template(self, camera_object:Camera=None) -> dict:
+        empty_prediction_dict = {   
+                    "DETECTOR_TYPE":"PoseDetector",                             # which detector made this prediction
+                    "frame_shape": [0,0],                                       # [0,0], [height , width] in pixels
+                    "class_name":"",                                            # hard_hat, no_hard_hat
+                    "bbox_confidence":0,                                        # 0.0 to 1.0
+                    "bbox_xyxy_px":[0,0,0,0],                                   # [x1,y1,x2,y2] in pixels
+                    "bbox_center_px": [0,0],                                    # [x,y] in pixels
+
+                    #------------------pose specific fields------------------
+                    "is_coordinated_wrt_camera": False,                         # True if the coordinates are wrt the camera, False if they are wrt the frame
+                    "belly_coordinate_wrt_camera": np.array([[0],[0],[0]]),     # [x,y,z] coordinates of the object wrt the camera
                     "is_coordinated_wrt_world_frame": False,
                     "belly_coordinate_wrt_world_frame":np.array([[0],[0],[0]]),
-                    "belly_distance_wrt_world_frame": 0, # distance between the camera and the person's belly in meters
-                    "is_pose_classified": False, # True if the pose is classified, False if not
-                    "pose_classification": "NoPose", # The pose classification
-                    "keypoints": { # Keypoints are in the format [x,y,confidence,x_angle, y_angle]
+                    "keypoints": {                                              # Keypoints are in the format [x,y,confidence,x_angle, y_angle]
                         "left_eye": [0,0,0,0,0],
                         "right_eye": [0,0,0,0,0],
                         "nose": [0,0,0,0,0],
@@ -78,44 +55,36 @@ class PoseDetector():
                         "left_ankle": [0,0,0,0,0],
                         "right_ankle": [0,0,0,0,0],
                     }
-            }
+        }
         return empty_prediction_dict
     
-    def predict_frame(self, frame, h_angle = 105.5, v_angle = 57.5):
-        """
-        predicts the pose of a single frame and returns the results in the format specified in self.prediction_results. Also store the results in the class object.
-        """
-        self._clear_prediction_results()
-
-        results = self.yolo_object(frame, task = "pose", verbose= False)[0]        
-        self.prediction_results['frame'] = frame
-        self.prediction_results['frame_shape'] = list(results.orig_shape) # Shape of the original image->  [height , width]
-        self.prediction_results["speed_results"] = results.speed # {'preprocess': None, 'inference': None, 'postprocess': None}
-        self.prediction_results["time_stamp"] = time.time()
-       
+    def predict_frame_and_return_detections(self, frame, camera_object:Camera = None) -> list[dict]:
+        self.recent_prediction_results = []
+        
+        results = self.yolo_object(frame, task = "pose", verbose= False)[0]
         for i, result in enumerate(results):
-            boxes = result.boxes  # Boxes object for bbox outputs 
-
+            boxes = result.boxes
             box_cls_no = int(boxes.cls.cpu().numpy()[0])
             box_cls_name = self.yolo_object.names[box_cls_no]
+            if box_cls_name not in ["person"]:
+                continue
             box_conf = boxes.conf.cpu().numpy()[0]
             box_xyxy = boxes.xyxy.cpu().numpy()[0]
-            bbox_pixel_area = (box_xyxy[2]-box_xyxy[0])*(box_xyxy[3]-box_xyxy[1])
 
-            result_detection_dict = self._PREDICTION_DICT_TEMPLATE()
-            result_detection_dict ["class_index"] = box_cls_no
-            result_detection_dict ["class_name"] = box_cls_name
-            result_detection_dict ["bbox_confidence"] = box_conf
-            result_detection_dict ["bbox"] = box_xyxy # Bounding box in the format [x1,y1,x2,y2]
-            result_detection_dict ["bbox_pixel_area"] = bbox_pixel_area
-
+            prediction_dict_template = self.get_empty_prediction_dict_template()
+            prediction_dict_template["frame_shape"] = list(results.orig_shape)
+            prediction_dict_template["class_name"] = box_cls_name
+            prediction_dict_template["bbox_confidence"] = box_conf
+            prediction_dict_template["bbox_xyxy_px"] = box_xyxy # Bounding box in the format [x1,y1,x2,y2]
+            prediction_dict_template["bbox_center_px"] = [ (box_xyxy[0]+box_xyxy[2])/2, (box_xyxy[1]+box_xyxy[3])/2]
+            
             key_points = result.keypoints  # Keypoints object for pose outputs
             keypoint_confs = key_points.conf.cpu().numpy()[0]
             keypoints_xy = key_points.xy.cpu().numpy()[0]
                        
-            frame_height = self.prediction_results['frame_shape'][0]
-            frame_width = self.prediction_results['frame_shape'][1]
-
+            frame_height = prediction_dict_template['frame_shape'][0]
+            frame_width = prediction_dict_template['frame_shape'][1]
+            h_angle, v_angle = camera_object.get_camera_view_angles()
             for keypoint_index, keypoint_name in enumerate(PoseDetector.KEYPOINT_NAMES):
                 keypoint_conf = keypoint_confs[keypoint_index] 
                 keypoint_x = keypoints_xy[keypoint_index][0]
@@ -127,22 +96,25 @@ class PoseDetector():
                 x_angle = ((keypoint_x/frame_width)-0.5)*h_angle
                 y_angle = (0.5-(keypoint_y/frame_height))*v_angle
 
-                result_detection_dict["keypoints"][keypoint_name] = [keypoint_x, keypoint_y , keypoint_conf, x_angle, y_angle]
+                prediction_dict_template["keypoints"][keypoint_name] = [keypoint_x, keypoint_y , keypoint_conf, x_angle, y_angle]
 
-            self.prediction_results["predictions"].append(result_detection_dict)
-
-    def approximate_prediction_distance(self, box_condifence_threshold = 0.25, distance_threshold = 1, shoulders_confidence_threshold = 0.75, transformation_matrices = None):
+            self.recent_prediction_results.append(prediction_dict_template)
+        
+        return self.recent_prediction_results
+    
+    def approximate_prediction_distance(self, prediction_dict:dict= None,  distance_threshold = 1, shoulders_confidence_threshold = 0.75, camera_object:Camera = None):
         """
         Calculates the distances between the camera and each detected person. if shoulders and hips are detected
 
         box_condifence_threshold: minimum confidence of the bounding box to be considered while calculating distance
         distance_threshold: minimum distance that the belly of the person should be away from the camera to be considered while calculating distance in meters
         """
+        DISTANCE_THRESHOLD = 1 # Min distance in meters from camera to belly in meters
+        SHOULDERS_CONFIDENCE_THRESHOLD = 0.75 # Min confidence of the shoulders to be considered while calculating distance
+    
         for result in self.prediction_results["predictions"]:
             # Get the bounding box coordinates
-            box_confidence = result["bbox_confidence"]
-            if box_confidence < box_condifence_threshold:
-                continue
+          
 
             rs_data = result["keypoints"]["right_shoulder"]
             ls_data = result["keypoints"]["left_shoulder"]

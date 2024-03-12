@@ -8,11 +8,11 @@ class ForkliftDetector:
     def __init__(self, model_path:str)-> None:          
         self.MODEL_PATH = model_path        
         self.yolo_object = YOLO( self.MODEL_PATH )   
-        self.recent_prediction_results = None # This will be a list of dictionaries, each dictionary will contain the prediction results for a single single detection
+        self.recent_prediction_results = None # This will be a list of dictionaries, each dictionary will contain the prediction results for a single detection
 
     def get_empty_prediction_dict_template(self) -> dict:
         empty_prediction_dict = {   
-                    "DETECTOR_TYPE":"forkliftDetector",          # which detector made this prediction
+                    "DETECTOR_TYPE":"ForkliftDetector",          # which detector made this prediction
                     "frame_shape": [0,0],                       # [0,0], [height , width] in pixels
                     "class_name":"",                            # hard_hat, no_hard_hat
                     "bbox_confidence":0,                        # 0.0 to 1.0
@@ -21,7 +21,7 @@ class ForkliftDetector:
         }
         return empty_prediction_dict
 
-    def predict_frame_and_return_detections(self, frame) -> list:
+    def predict_frame_and_return_detections(self, frame) -> list[dict]:
         self.recent_prediction_results = []
 
         results = self.yolo_object(frame, task = "predict", verbose = False)[0]     
