@@ -1,7 +1,7 @@
 from scripts.safety_equipment_detectors import HardHatDetector
 from scripts.vehicle_detectors import ForkliftDetector
 from scripts.pose_detector import PoseDetector
-from scripts.general_objects import Camera
+from scripts.camera import Camera
 
 class Detector():
     def __init__(self, camera_object:Camera=None, pose_model_index:int = 2, hard_hat_model_index:int = 0, forklift_model_index:int=0) -> None:
