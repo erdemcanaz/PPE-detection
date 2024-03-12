@@ -72,6 +72,7 @@
 #===================
 # V = A_r *Vwp + C |
 #===================
+# Even though V is an unit vector, This transformation transforms any point from camera coordinate system to the world coordinate system
 
 #@@@@@ FINDING THE UNKNOWNS PRACTICALLY @@@@@#
 
