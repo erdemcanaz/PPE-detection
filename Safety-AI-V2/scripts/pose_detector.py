@@ -22,7 +22,7 @@ class PoseDetector():
         self.yolo_object = YOLO( self.MODEL_PATH, verbose= False)        
         self.recent_prediction_results = None # This will be a list of dictionaries, each dictionary will contain the prediction results for a single detection
 
-    def get_empty_prediction_dict_template(self, camera_object:Camera=None) -> dict:
+    def get_empty_prediction_dict_template(self) -> dict:
         empty_prediction_dict = {   
                     "DETECTOR_TYPE":"PoseDetector",                             # which detector made this prediction
                     "frame_shape": [0,0],                                       # [0,0], [height , width] in pixels
