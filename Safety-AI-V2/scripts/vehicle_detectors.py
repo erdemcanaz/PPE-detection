@@ -4,7 +4,7 @@ import time
 
 from ultralytics import YOLO
 
-class hardHatDetector:
+class forkliftDetector:
     def __init__(self, model_path:str)-> None:          
         self.MODEL_PATH = model_path        
         self.yolo_object = YOLO( self.MODEL_PATH )   
@@ -12,7 +12,7 @@ class hardHatDetector:
 
     def get_empty_prediction_dict_template(self) -> dict:
         empty_prediction_dict = {   
-                    "DETECTOR_TYPE":"hardHatDetector",          # which detector made this prediction
+                    "DETECTOR_TYPE":"forkliftDetector",          # which detector made this prediction
                     "frame_shape": [0,0],                       # [0,0], [height , width] in pixels
                     "class_name":"",                            # hard_hat, no_hard_hat
                     "bbox_confidence":0,                        # 0.0 to 1.0
@@ -29,7 +29,7 @@ class hardHatDetector:
             boxes = result.boxes
             box_cls_no = int(boxes.cls.cpu().numpy()[0])
             box_cls_name = self.yolo_object.names[box_cls_no]
-            if box_cls_name not in ["hard_hat", "no_hard_hat"]:
+            if box_cls_name not in ["forklift"]:
                 continue
             box_conf = boxes.conf.cpu().numpy()[0]
             box_xyxy = boxes.xyxy.cpu().numpy()[0]
