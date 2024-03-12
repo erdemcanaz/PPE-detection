@@ -22,6 +22,8 @@ class Detector():
             "yolo_models/yolov8x-pose-p6.pt",   #5
         ]
 
+        self.camera_objects_dict = {} #camera uuid's are keys, camera objects are values
+
         self.hard_hat_detector_object = HardHatDetector(model_path = HARD_HAT_MODEL_PATHS[hard_hat_model_index] )
         self.forklift_detector_object = ForkliftDetector(model_path = FORKLIFT_MODEL_PATHS[forklift_model_index] )
         self.pose_detector_object = PoseDetector(model_path = POSE_MODEL_PATHS[pose_model_index] )
@@ -34,12 +36,15 @@ class Detector():
             "vehicle_detections":[]
         }
 
-    def predict_frame_and_return_detections(self, frame,  camera_object:Camera=None) -> dict:   
+    def predict_frame_and_return_detections(self, frame,  camera_uuid:str="default") -> dict:   
         self.recent_frame = frame
+
+        if camera_uuid not in self.camera_objects_dict:
+            self.camera_objects_dict[camera_uuid] = Camera(uuid=camera_uuid)
 
         self.all_predictions["safety_equipment_detections"] = self.hard_hat_detector_object.predict_frame_and_return_detections(frame)
         self.all_predictions["vehicle_detections"] = self.forklift_detector_object.predict_frame_and_return_detections(frame)
-        self.all_predictions["human_detections"] = self.pose_detector_object.predict_frame_and_return_detections(frame, camera_object = camera_object)
+        self.all_predictions["human_detections"] = self.pose_detector_object.predict_frame_and_return_detections(frame, camera_object = self.camera_objects_dict[camera_uuid])
        
         return self.all_predictions
 

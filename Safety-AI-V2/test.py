@@ -8,8 +8,7 @@ from modules import detector
 from scripts.camera import Camera
 
 frame_visualizer = FrameVisualizerSimple()
-camera_object = Camera(uuid="7cabf973-f717-44a7-a261-2a3ec7cc610c")
-detector_object = detector.Detector(pose_model_index = 2, hard_hat_model_index = 0, forklift_model_index = 0)
+detector_object = detector.Detector(pose_model_index = 4, hard_hat_model_index = 0, forklift_model_index = 0)
 
 frames = [
     cv2.imread("images/frame_1.png"),
@@ -20,7 +19,7 @@ frames = [
 ]
 
 for frame in frames:
-    detections = detector_object.predict_frame_and_return_detections(frame= frame, camera_object=camera_object )
+    detections = detector_object.predict_frame_and_return_detections(frame= frame, camera_uuid= "7cabf973-f717-44a7-a261-2a3ec7cc610c" )
     frame_visualizer.show_frame(frame_name="FrameVisualizer", frame = frame, detections = detections, scale_factor= 0.75)
 
 #TODO: frame detection post-processing (whether in forklift, whether hard hat violation etc.)
