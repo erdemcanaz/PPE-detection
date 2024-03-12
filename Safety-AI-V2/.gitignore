@@ -1,6 +1,7 @@
 # Ignore everything in the below directories
 images/*
 videos/*
+videos/videos_to_process/*
 json_files/*
 yolo_models/*
 # Except the directory itself and the .gitkeep file
@@ -8,3 +9,5 @@ yolo_models/*
 !videos/.gitkeep
 !json_files/.gitkeep
 !yolo_models/.gitkeep
+!videos/videos_to_process
+!videos/videos_to_process/.gitkeep
