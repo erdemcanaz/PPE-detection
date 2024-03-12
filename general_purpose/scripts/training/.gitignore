@@ -2,6 +2,7 @@
 *images/*
 *models/*
 data/*
+*data_forklift
 *training_results/*
 
 !training_results

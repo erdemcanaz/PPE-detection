@@ -7,7 +7,7 @@ import numpy as np
 import cv2
 
 def generate_data_points(start_from_sec = 0, camera_horizontal_angle = 105.5, camera_vertical_angle = 57.5):
-    model_path = "yolo_models/yolov8x-pose.pt"
+    model_path = "yolo_models/yolov8x-pose-p6.pt"
     video_path = input("Enter the path to the video: ")
 
     pose_detector_object = detect_pose.poseDetector(model_path=model_path)
@@ -86,7 +86,7 @@ def test_matrices(A=None, B=None, T=np.array([0,0,0]), start_from_sec = 0, camer
 
         
 if __name__ == "__main__":
-    start_from_sec = (24.5)*60
+    start_from_sec = (44)*60
     number = input("Pick a number:\n (1) Get-samples\n (2) Calculate-matrices\n (3) Test matrices\nYour number:")
     if number == "1":
         generate_data_points(start_from_sec=start_from_sec, camera_horizontal_angle = 105.5, camera_vertical_angle = 57.5)
@@ -94,14 +94,14 @@ if __name__ == "__main__":
         find_transformation_coefficients.calculate_transformation_coefficients()
     elif number == "3":
         A = np.array([
-        [0.1021, -1.0055,-4.3338],
-        [-0.4965, 0.1079,-1.1563],
-        [-0.5282, 0.2668,-4.5493]
+        [0.1773, 1.1016,-0.8396],
+        [-0.3575, 0.0863,-0.7085],
+        [-0.4434, -0.1047,1.2632]
         ])
         B = np.array([
-                [6.3788],
-                [-2.4981],
-                [5.3013]
+                [-0.6997],
+                [-0.5904],
+                [1.0526]
         ])
-        T = np.array([2.84, -28.47, 0])
+        T = np.array([-44.69, 31.54, 0])
         test_matrices(A=A, B=B, T=T, start_from_sec=start_from_sec,camera_horizontal_angle = 105.5, camera_vertical_angle = 57.5)
