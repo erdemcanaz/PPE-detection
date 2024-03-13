@@ -6,11 +6,11 @@ def main():
     torch.cuda.set_device(0) # Set to your desired GPU number
 
     # Option 1: Train directly from the model definition
-    model = YOLO('yolov8n.yaml')
+    #model = YOLO('yolov8n.yaml')
 
     # Option 2: Build from YAML and transfer pretrained weights
-    # model_path_to_train_on = input("Enter the path to the model to train on: ")
-    # model = YOLO('yolov8n.yaml').load(model_path_to_train_on)
+    model_path_to_train_on = input("Enter the path to the model to train on: ")
+    model = YOLO('yolov8n.yaml').load(model_path_to_train_on)
 
     #model = YOLO('yolov8n.yaml')
 
@@ -35,13 +35,13 @@ def main():
 
     model.train(
         data=yaml_file,
-        classes = [0,1,2],
+        classes = [0,1],
         epochs=100, 
         save_dir=save_dir,
         project=save_dir,
         name=experiment,
         imgsz=640,
-        save_period = 25,
+        save_period = 10,
         batch = 4,
         plots = True
     )
