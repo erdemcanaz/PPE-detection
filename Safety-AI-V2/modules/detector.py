@@ -34,9 +34,9 @@ class Detector():
         self.recent_frame = None
 
         self.all_predictions = {
-            "human_detections":[], 
-            "safety_equipment_detections":[],
-            "vehicle_detections":[]
+            "pose_detections":[], 
+            "hard_hat_detections":[],
+            "forklift_detections":[]
         }
 
     def initialize_all_cameras(self) -> None:
@@ -47,10 +47,11 @@ class Detector():
            self.camera_objects_dict[camera_config["uuid"]] = Camera(uuid = camera_config["uuid"])            
 
     def predict_frame_and_return_detections(self, frame,  camera_uuid:str="default") -> dict:   
+        
         self.recent_frame = frame
-        self.all_predictions["safety_equipment_detections"] = self.hard_hat_detector_object.predict_frame_and_return_detections(frame)
-        self.all_predictions["vehicle_detections"] = self.forklift_detector_object.predict_frame_and_return_detections(frame)
-        self.all_predictions["human_detections"] = self.pose_detector_object.predict_frame_and_return_detections(frame, camera_object = self.camera_objects_dict[camera_uuid])
+        self.all_predictions["hard_hat_detections"] = self.hard_hat_detector_object.predict_frame_and_return_detections(frame)
+        self.all_predictions["forklift_detections"] = self.forklift_detector_object.predict_frame_and_return_detections(frame)
+        self.all_predictions["pose_detections"] = self.pose_detector_object.predict_frame_and_return_detections(frame, camera_object = self.camera_objects_dict[camera_uuid])
        
         return self.all_predictions
 
