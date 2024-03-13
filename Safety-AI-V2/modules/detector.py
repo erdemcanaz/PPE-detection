@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 
 from scripts.safety_equipment_detectors import HardHatDetector
@@ -23,6 +25,7 @@ class Detector():
         ]
 
         self.camera_objects_dict = {} #camera uuid's are keys, camera objects are values
+        self.initialize_all_cameras()
 
         self.hard_hat_detector_object = HardHatDetector(model_path = HARD_HAT_MODEL_PATHS[hard_hat_model_index] )
         self.forklift_detector_object = ForkliftDetector(model_path = FORKLIFT_MODEL_PATHS[forklift_model_index] )
@@ -36,12 +39,15 @@ class Detector():
             "vehicle_detections":[]
         }
 
+    def initialize_all_cameras(self) -> None:
+        with open('json_files/camera_configs.json') as f:
+            camera_configs = json.load(f)["cameras"]
+            
+        for camera_config in camera_configs:
+           self.camera_objects_dict[camera_config["uuid"]] = Camera(uuid = camera_config["uuid"])            
+
     def predict_frame_and_return_detections(self, frame,  camera_uuid:str="default") -> dict:   
         self.recent_frame = frame
-
-        if camera_uuid not in self.camera_objects_dict:
-            self.camera_objects_dict[camera_uuid] = Camera(uuid=camera_uuid)
-
         self.all_predictions["safety_equipment_detections"] = self.hard_hat_detector_object.predict_frame_and_return_detections(frame)
         self.all_predictions["vehicle_detections"] = self.forklift_detector_object.predict_frame_and_return_detections(frame)
         self.all_predictions["human_detections"] = self.pose_detector_object.predict_frame_and_return_detections(frame, camera_object = self.camera_objects_dict[camera_uuid])
