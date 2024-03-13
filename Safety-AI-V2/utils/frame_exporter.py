@@ -2,9 +2,6 @@ import cv2
 import os
 import uuid
 
-
-
-
 image_info = input("Enter the image info (i.e CH14_forklift): ")
 # Replace 'your_video_file.mp4' with the path to your video file
 video_path = input("Enter the path to the video file: ")
@@ -51,7 +48,7 @@ while True:
     elif key == ord('s'):
         # Save the current frame
 
-        image_name = f"secret_bone_koltuk_2_{image_info}_{str(uuid.uuid4())}.jpg"
+        image_name = f"secret_{image_info}_{str(uuid.uuid4())}.jpg"
         frame_filename = os.path.join(save_folder, image_name)
         cv2.imwrite(frame_filename, frame)
         print(f"Saved: {frame_filename}")
