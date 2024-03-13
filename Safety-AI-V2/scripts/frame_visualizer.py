@@ -39,7 +39,7 @@ class FrameVisualizerSimple:
         bbox_center = list(map(int, prediction["bbox_center_px"]))
         bbox_confidence = prediction["bbox_confidence"]
 
-        color = (0, 255, 0) if bbox_confidence >0.75 else (0, 75, 0)
+        color = (0, 255, 0) if bbox_confidence >0.50 else (0, 75, 0)
 
         frame = cv2.rectangle(frame, (bbox_xyxy[0], bbox_xyxy[1]), (bbox_xyxy[2], bbox_xyxy[3]), color, 2)
         frame = cv2.putText(frame, class_name, (bbox_xyxy[0], bbox_xyxy[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
@@ -51,7 +51,7 @@ class FrameVisualizerSimple:
         bbox_center = list(map(int, prediction["bbox_center_px"]))
         bbox_confidence = prediction["bbox_confidence"]
 
-        color = (0, 255, 0) if bbox_confidence >0.75 else (0, 75, 0)
+        color = (0, 255, 0) if bbox_confidence >0.50 else (0, 75, 0)
         
         frame = cv2.rectangle(frame, (bbox_xyxy[0], bbox_xyxy[1]), (bbox_xyxy[2], bbox_xyxy[3]), color, 2)
         frame = cv2.putText(frame, class_name, (bbox_xyxy[0], bbox_xyxy[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)

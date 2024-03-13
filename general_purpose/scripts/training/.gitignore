@@ -5,6 +5,9 @@ data/*
 *data_forklift
 *training_results/*
 
+classes.txt
+predefined_classes.txt
+
 !training_results
 !data
 !videos

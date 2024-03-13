@@ -10,7 +10,7 @@ from scripts.camera import Camera
 
 frame_visualizer = FrameVisualizerSimple()
 video_feeder_object = VideoFeeder()
-detector_object = Detector(pose_model_index = 0, hard_hat_model_index = 0, forklift_model_index = 0)
+detector_object = Detector(pose_model_index = 4, hard_hat_model_index = 0, forklift_model_index = 0)
 
 while True:
     start_time = time.time()    
@@ -23,7 +23,7 @@ while True:
         continue
     
     detections = detector_object.predict_frame_and_return_detections(frame= frame, camera_uuid= uuid )
-    if not frame_visualizer.show_frame(frame_name=f"{NVR_ip} - {channel}", frame = frame, detections = detections, scale_factor= 0.75, wait_time_ms= 1):
+    if not frame_visualizer.show_frame(frame_name=f"{NVR_ip} - {channel}", frame = frame, detections = detections, scale_factor= 0.75, wait_time_ms= 0):
         break
 
     skipping_second = 180
