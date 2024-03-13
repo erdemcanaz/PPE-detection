@@ -5,7 +5,7 @@ class FrameVisualizerSimple:
     def __init__(self):     
         pass       
 
-    def show_frame(self, frame_name:str="FrameVisualizer", frame = None, detections: dict=None, scale_factor:float = 1)-> np.ndarray:
+    def show_frame(self, frame_name:str="FrameVisualizer", frame = None, detections: dict=None, scale_factor:float = 1, wait_time_ms:int = 0)-> bool:
         #draw hard-hat detections
         for prediction in detections["safety_equipment_detections"]:
             if prediction["DETECTOR_TYPE"] == "HardHatDetector":
@@ -26,26 +26,35 @@ class FrameVisualizerSimple:
         resized_frame = cv2.resize(frame, (new_width, new_height))
         cv2.imshow(frame_name, resized_frame)
 
-
-        key = cv2.waitKey(0)
+        key = cv2.waitKey(wait_time_ms)
         if key == ord('q'):
             cv2.destroyAllWindows()
+            return False
+        return True
 
     def __draw_forklift(self, frame, prediction:list=None):
         class_name = prediction["class_name"]
         #map() in Python 3 returns a map object (a lazy iterator), so we use list casting for immediate evaluation.
         bbox_xyxy = list(map(int, prediction["bbox_xyxy_px"]))     
         bbox_center = list(map(int, prediction["bbox_center_px"]))
-        frame = cv2.rectangle(frame, (bbox_xyxy[0], bbox_xyxy[1]), (bbox_xyxy[2], bbox_xyxy[3]), (0, 255, 0), 2)
-        frame = cv2.putText(frame, class_name, (bbox_xyxy[0], bbox_xyxy[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+        bbox_confidence = prediction["bbox_confidence"]
+
+        color = (0, 255, 0) if bbox_confidence >0.75 else (0, 75, 0)
+
+        frame = cv2.rectangle(frame, (bbox_xyxy[0], bbox_xyxy[1]), (bbox_xyxy[2], bbox_xyxy[3]), color, 2)
+        frame = cv2.putText(frame, class_name, (bbox_xyxy[0], bbox_xyxy[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
         frame = cv2.circle(frame, (int(bbox_center[0]), int(bbox_center[1])), 5, (0, 0, 255), -1)
 
     def __draw_person(self, frame, prediction:list = None):
         class_name = prediction["class_name"]
         bbox_xyxy = list(map(int, prediction["bbox_xyxy_px"]))     
         bbox_center = list(map(int, prediction["bbox_center_px"]))
-        frame = cv2.rectangle(frame, (bbox_xyxy[0], bbox_xyxy[1]), (bbox_xyxy[2], bbox_xyxy[3]), (0, 255, 0), 2)
-        frame = cv2.putText(frame, class_name, (bbox_xyxy[0], bbox_xyxy[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+        bbox_confidence = prediction["bbox_confidence"]
+
+        color = (0, 255, 0) if bbox_confidence >0.75 else (0, 75, 0)
+        
+        frame = cv2.rectangle(frame, (bbox_xyxy[0], bbox_xyxy[1]), (bbox_xyxy[2], bbox_xyxy[3]), color, 2)
+        frame = cv2.putText(frame, class_name, (bbox_xyxy[0], bbox_xyxy[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
         frame = cv2.circle(frame, (int(bbox_center[0]), int(bbox_center[1])), 5, (0, 0, 255), -1)
 
     def __draw_hard_hat(self, frame, prediction:list = None):
