@@ -39,9 +39,15 @@ while True:
     if key == ord('d'):
         current_pos = cap.get(cv2.CAP_PROP_POS_FRAMES)
         cap.set(cv2.CAP_PROP_POS_FRAMES, current_pos + frame_jump)
+    elif key == ord('e'):
+        current_pos = cap.get(cv2.CAP_PROP_POS_FRAMES)
+        cap.set(cv2.CAP_PROP_POS_FRAMES, current_pos + frame_jump*15)
     elif key == ord('a'):
         current_pos = cap.get(cv2.CAP_PROP_POS_FRAMES)
         cap.set(cv2.CAP_PROP_POS_FRAMES, current_pos - frame_jump)
+    elif key == ord('q'):
+        current_pos = cap.get(cv2.CAP_PROP_POS_FRAMES)
+        cap.set(cv2.CAP_PROP_POS_FRAMES, current_pos - frame_jump*15)
     elif key == ord('s'):
         # Save the current frame
 
