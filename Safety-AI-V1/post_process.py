@@ -262,7 +262,7 @@ def post_process_hard_hat(report_config: dict = None, pre_process_results: list[
                     safety_equipment_row["violation_score"] = violation_score 
                     break
                 else:                                      
-                    continue
+                    continue    
             
             print("\t  violation score:", f"{safety_equipment_row['violation_score']:.2f}")
             hard_hat_csv_exporter_object.append_row(safety_equipment_row)
