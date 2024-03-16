@@ -9,4 +9,4 @@
 #ignore the python environment
 *env
 
-!local
+!local/.gitkeep
