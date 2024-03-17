@@ -37,9 +37,11 @@ class MemorylessViolationEvaluator:
 
                     "is_violating_restricted_area_rule": bool,
                     "restricted_area_violation_score": float,
+
                     "is_violating_hard_hat_rule": bool,
                     "hard_hat_violation_score": float,
-                    "is_violating_height_threshold": bool
+
+                    "is_violating_height_rule": bool
                     "height_violation_score": float
                 }
             ]
@@ -147,8 +149,11 @@ class MemorylessViolationEvaluator:
             person_height = person_detection_obj.get_world_coordinate()[2][0] #z coordinate
             S_height_violation_score = f_sigmoid(person_height - self.HEIGHT_RULE_THRESHOLD)
 
+            is_person_not_in_forklift = not person_detection_obj.is_matched_with_forklift()
+            is_height_violation_score_higher_than_threshold = S_height_violation_score > self.HEIGH_RULE_THRESHOLD_VIOLATION_SCORE
+
             person_evaluation_dict["height_violation_score"] = S_height_violation_score
-            person_evaluation_dict["is_violating_height_rule"] = S_height_violation_score > self.HEIGH_RULE_THRESHOLD_VIOLATION_SCORE
+            person_evaluation_dict["is_violating_height_rule"] = is_person_not_in_forklift and is_height_violation_score_higher_than_threshold
             person_evaluation_dict["is_at_height"] = person_evaluation_dict["is_violating_height_rule"] 
 
             #evaluate hard_hat violation score

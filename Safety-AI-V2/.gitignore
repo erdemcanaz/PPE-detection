@@ -7,7 +7,7 @@ yolo_models/*
 
 utils/training_data*
 # Except the directory itself and the .gitkeep file
-!images/.gitkeep
+!images/src/.gitkeep
 !json_files/.gitkeep
 !yolo_models/.gitkeep
 !videos/videos_to_process/.gitkeep
