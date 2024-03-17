@@ -5,13 +5,17 @@ import cv2
 
 from modules.video_feeder import VideoFeeder
 from modules.detector import Detector
+from modules.memoryless_violation_evaluator import MemorylessViolationEvaluator
 from scripts.frame_visualizer import FrameVisualizerSimple
 from scripts.camera import Camera
 
 frame_visualizer = FrameVisualizerSimple()
 video_feeder_object = VideoFeeder()
 detector_object = Detector(pose_model_index = 4, hard_hat_model_index = 0, forklift_model_index = 0)
+memoryless_violation_evaluator_object = MemorylessViolationEvaluator()
 
+
+video_feeder_object.change_to_video(11)
 while True:
     start_time = time.time()    
     frame, ret, NVR_ip, channel, uuid = video_feeder_object.get_current_video_frame()    
@@ -23,6 +27,8 @@ while True:
         continue
     
     detections = detector_object.predict_frame_and_return_detections(frame= frame, camera_uuid= uuid )
+    memoryless_violation_evaluator_object.evaluate_for_violations(detections = detections)
+
     if not frame_visualizer.show_frame(frame_name=f"{NVR_ip} - {channel}", frame = frame, detections = detections, scale_factor= 0.75, wait_time_ms= 0):
         break
 

@@ -82,6 +82,11 @@ class VideoFeeder:
         self.current_video_index -= 1
         return True
     
+    def change_to_video(self, video_index: int) -> None:
+        if video_index < 0 or video_index > len(self.video_recording_objects) - 1:
+            raise ValueError("Invalid video index")
+        self.current_video_index = video_index
+    
     def fast_forward_seconds(self, seconds: int) -> None:
         is_at_edge = self.video_recording_objects[self.current_video_index].fast_forward_seconds(seconds)
         return (not is_at_edge) #if returns False, you should continue to the next video

@@ -64,7 +64,7 @@ class FrameVisualizerSimple:
         bbox_confidence = prediction["bbox_confidence"]
 
         color = (0, 255, 0) if class_name == "hard_hat" else (0, 0, 255)
-        color = (0, 0, 0) if bbox_confidence < 0.80 else color
+        color = (0, 0, 0) if bbox_confidence < 0.75 else color
 
         frame = cv2.rectangle(frame, (bbox_xyxy[0], bbox_xyxy[1]), (bbox_xyxy[2], bbox_xyxy[3]), color, 2)
         frame = cv2.putText(frame, class_name, (bbox_xyxy[0], bbox_xyxy[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
