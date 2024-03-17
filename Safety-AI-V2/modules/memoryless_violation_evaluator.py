@@ -112,11 +112,9 @@ class MemorylessViolationEvaluator:
                 is_same_overlap_ratio = hard_hat_and_person_overlapping_ratio == best_hard_hat_candidate[1]
                 is_closer_to_head_center = distance_between_centers < best_hard_hat_candidate[2]
 
-                print(f"hard_hat_and_person_overlapping_ratio: {hard_hat_and_person_overlapping_ratio}, distance_between_centers: {distance_between_centers}")
-                pprint.pprint(f"is_hard_hat_already_matched: {is_hard_hat_already_matched}, is_overlap_ratio_higher_than_threshold: {is_overlap_ratio_higher_than_threshold}, is_no_candidate_yet: {is_no_candidate_yet}, is_better_overlap_ratio: {is_better_overlap_ratio}, is_same_overlap_ratio: {is_same_overlap_ratio}, is_closer_to_head_center: {is_closer_to_head_center}")
                 condition_1 = (not is_hard_hat_already_matched) and is_overlap_ratio_higher_than_threshold and (is_no_candidate_yet or is_better_overlap_ratio)
                 condition_2 = (not is_hard_hat_already_matched) and is_overlap_ratio_higher_than_threshold and (is_same_overlap_ratio and is_closer_to_head_center)
-                print(condition_1, condition_2)
+
                 if condition_1 or condition_2:
                     best_hard_hat_candidate[0], best_hard_hat_candidate[1], best_hard_hat_candidate[2] = hard_hat_detection_obj, hard_hat_and_person_overlapping_ratio, distance_between_centers
             
