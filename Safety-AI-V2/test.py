@@ -14,8 +14,7 @@ video_feeder_object = VideoFeeder()
 detector_object = Detector(pose_model_index = 4, hard_hat_model_index = 0, forklift_model_index = 0)
 memoryless_violation_evaluator_object = MemorylessViolationEvaluator()
 
-
-video_feeder_object.change_to_video(11)
+video_feeder_object.change_to_video(2)
 while True:
     start_time = time.time()    
     frame, ret, NVR_ip, channel, uuid = video_feeder_object.get_current_video_frame()    
@@ -27,15 +26,16 @@ while True:
         continue
     
     detections = detector_object.predict_frame_and_return_detections(frame= frame, camera_uuid= uuid )
-    memoryless_violation_evaluator_object.evaluate_for_violations(detections = detections)
+    evaluation_results = memoryless_violation_evaluator_object.evaluate_for_violations(detections = detections, camera_uuid = uuid)
+    pprint(evaluation_results)
 
     if not frame_visualizer.show_frame(frame_name=f"{NVR_ip} - {channel}", frame = frame, detections = detections, scale_factor= 0.75, wait_time_ms= 0):
         break
 
-    skipping_second = 180
+    skipping_second = 5
     video_feeder_object.fast_forward_seconds(skipping_second)
     end_time = time.time()
     elapsed_time = end_time - start_time
-    print(f"{channel} - % {video_feeder_object.get_watched_duration_percentage()} complete FPS = {str(round(1/elapsed_time,1)):<5}, {uuid}", end="\r")
+    print(f"{channel} - % {video_feeder_object.get_watched_duration_percentage()} complete FPS = {str(round(1/elapsed_time,1)):<5}, {uuid}", end="\n") #\r
 
 

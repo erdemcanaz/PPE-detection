@@ -6,11 +6,7 @@ class FrameVisualizerSimple:
         pass       
 
     def show_frame(self, frame_name:str="FrameVisualizer", frame = None, detections: dict=None, scale_factor:float = 1, wait_time_ms:int = 0)-> bool:
-        #draw hard-hat detections
-        for prediction in detections["hard_hat_detections"]:
-            if prediction["DETECTOR_TYPE"] == "HardHatDetector":
-                self.__draw_hard_hat(frame= frame, prediction= prediction)
-        
+               
         #draw forklifts
         for prediction in detections["forklift_detections"]:
             if prediction["DETECTOR_TYPE"] == "ForkliftDetector":
@@ -20,6 +16,11 @@ class FrameVisualizerSimple:
         for prediction in detections["pose_detections"]:
             if prediction["DETECTOR_TYPE"] == "PoseDetector":
                 self.__draw_person(frame= frame, prediction= prediction)
+
+        #draw hard-hat detections
+        for prediction in detections["hard_hat_detections"]:
+            if prediction["DETECTOR_TYPE"] == "HardHatDetector":
+                self.__draw_hard_hat(frame= frame, prediction= prediction)
             
         new_width = int(frame.shape[1] * scale_factor)
         new_height = int(frame.shape[0] * scale_factor)
