@@ -179,9 +179,9 @@ class MemorylessViolationEvaluator:
             #evaluate restricted area violation score
             is_person_not_in_forklift = not person_detection_obj.is_matched_with_forklift()
             is_in_restricted_area = MemorylessViolationEvaluator.is_person_inside_this_areas(person_detection_obj, self.RESTRICTED_AREAS)
-            S_restricted_area_violation_score = 1 if person_evaluation_dict["is_violating_restricted_area_rule"] else 0
 
             person_evaluation_dict["is_violating_restricted_area_rule"] = is_person_not_in_forklift and is_in_restricted_area
+            S_restricted_area_violation_score = 1 if person_evaluation_dict["is_violating_restricted_area_rule"] else 0
             person_evaluation_dict["restricted_area_violation_score"] = S_restricted_area_violation_score
 
             #--------------------------

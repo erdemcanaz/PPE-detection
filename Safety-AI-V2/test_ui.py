@@ -25,7 +25,7 @@ recordings_to_check = all_recording_indexes
 # Replace 'output_video.mp4' with your desired output file name
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # 'mp4v' for .mp4 files, 'XVID' for .avi
 
-video_fps = 1 * 6
+video_fps = 1 * 4
 video_writer = cv2.VideoWriter('output_video.mp4', fourcc, video_fps, (1440, 810))  # Adjust frame rate and dimensions as needed
 
 skipping_second = 1 #initial skipping second, changes dynamically based on the detection results
@@ -47,11 +47,11 @@ while True: #process all recodings
         if evaluation_results["number_of_persons"] > 0:
             is_person_detected = True
 
-    if not is_person_detected:
-        skipping_second = min(30, skipping_second + 2.5)
-    else:
-        skipping_second = 1
-
+    # if not is_person_detected:
+    #     skipping_second = min(30, skipping_second + 2.5)
+    # else:
+    #     skipping_second = 5
+        
     timestamp_str = video_feeder_object.get_current_video_date_str()
     is_q_pressed, displayed_frame = ui_module_object.update_ui_frame(multiple_camera_evaluation_results=iteration_detection_results, window_scale_factor= 0.75, emoji_scale_factor= 2.25, wait_time_ms= 1, timestamp_str = timestamp_str)
     if is_q_pressed:

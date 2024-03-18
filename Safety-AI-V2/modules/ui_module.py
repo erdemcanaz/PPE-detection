@@ -99,6 +99,10 @@ class UIModule:
         self.update_camera_counter = 0
         self.displayed_frames = []
 
+        self.total_person_detected = 0
+        self.total_violation_detected = 0
+        self.total_forklift_detected = 0
+
     def get_background_image(self):
         return copy.deepcopy(self.BACKGROUND_IMAGE)
     
@@ -124,7 +128,7 @@ class UIModule:
         Y_OFFSET = 150+((new_height+10)*row)       
 
         resized_new_overlay_frame = cv2.resize(overlay_frame, (new_width, new_height))
-        blurred_overlay_frame = cv2.GaussianBlur(resized_new_overlay_frame, (11,11), 0)  # Add Gaussian blur
+        blurred_overlay_frame = cv2.GaussianBlur(resized_new_overlay_frame, (3,3), 0)  # Add Gaussian blur
         frame[Y_OFFSET:Y_OFFSET + new_height , X_OFFSET:X_OFFSET + new_width] = blurred_overlay_frame
 
     def overlay_timestamp(self, frame, timestamp_str):
@@ -139,7 +143,52 @@ class UIModule:
                     font,
                     fontScale,
                     fontColor,
-                    lineType)        
+                    lineType) 
+               
+    def overlay_total_counts(self, frame):
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        bottomLeftCornerOfText = (500, 750)
+        fontScale = 1
+        fontColor = (155, 7, 7)
+        lineType = 2
+        cv2.putText(frame, "Total Person Count: " + str(self.total_person_detected),
+                    bottomLeftCornerOfText,
+                    font,
+                    fontScale,
+                    fontColor,
+                    lineType) 
+
+        bottomLeftCornerOfText = (500, 800)
+        cv2.putText(frame, "Total Violation Count: " + str(self.total_violation_detected),
+                    bottomLeftCornerOfText,
+                    font,
+                    fontScale,
+                    fontColor,
+                    lineType)
+        
+        bottomLeftCornerOfText = (500, 850)
+        cv2.putText(frame, "Total Forklift Count: " + str(self.total_forklift_detected),
+                    bottomLeftCornerOfText,
+                    font,
+                    fontScale,
+                    fontColor,
+                    lineType)
+        
+        bottomLeftCornerOfText = (920, 770)
+        cv2.putText(frame, "Total Violation Rate",
+                    bottomLeftCornerOfText,
+                    font,
+                    1,
+                    fontColor,
+                    lineType)
+        
+        bottomLeftCornerOfText = (920, 820)
+        cv2.putText(frame, "% "+str(round(100*self.total_violation_detected/self.total_person_detected, 2)),
+                    bottomLeftCornerOfText,
+                    font,
+                    2,
+                    fontColor,
+                    lineType)
 
     def overlay_camera_circles(self, frame, camera_uuid:str,  is_person:bool = False):
         center_x, center_y = self.UUID_INFOS[camera_uuid]["px_coord_wrt_origin"]
@@ -182,14 +231,13 @@ class UIModule:
             number_of_persons = evaluation_results["number_of_persons"]
             person_evaluations = evaluation_results["person_evaluations"]              
        
+            self.total_person_detected += number_of_persons
+            self.total_forklift_detected += number_of_forklifts
+
             if number_of_forklifts > 0:
                 is_person = True if number_of_persons > 0 else False
                 self.overlay_camera_circles(new_frame, camera_uuid, is_person = is_person )
 
-            if timestamp_str != None:
-                self.overlay_timestamp(new_frame, timestamp_str)
-
-            number_of_violations = 0
             for person_evaluation in person_evaluations:
                 is_in_forklift = person_evaluation["is_in_forklift"]
                 is_wearing_hard_hat = person_evaluation["is_wearing_hard_hat"]
@@ -200,7 +248,7 @@ class UIModule:
                 is_violating_height_rule = person_evaluation["is_violating_height_rule"]
                 is_violating = is_violating_restricted_area or is_violating_hard_hat_area or is_violating_height_rule
                 if is_violating:
-                    number_of_violations += 1
+                    self.total_violation_detected += 1
 
                 person_x = person_evaluation["world_coordinate"][0][0]
                 person_y = person_evaluation["world_coordinate"][1][0]
@@ -212,12 +260,15 @@ class UIModule:
                 emoji_frame = self.get_person_emoji(scale_factor= emoji_scaler, is_violating=is_violating, is_in_forklift=is_in_forklift, is_wearing_hard_hat=is_wearing_hard_hat, is_at_height=is_at_height)
                 self.overlay_person_emoji(new_frame, emoji_frame, person_x_px, person_y_px)
 
-            detection_frames.append([evaluation_results["frame_externally_added_key"], number_of_violations*5,number_of_persons*2+number_of_forklifts, camera_uuid] ) 
-
+            detection_frames.append(evaluation_results["frame_externally_added_key"] ) 
         
-      
+        self.overlay_total_counts(new_frame)
+
+        if timestamp_str != None:
+                self.overlay_timestamp(new_frame, timestamp_str)
+
         for i in range(len(detection_frames) ):
-            cctv_frame = detection_frames[i][0]
+            cctv_frame = detection_frames[i]
             row = i // 2
             column = i % 2
             self.overlay_frame(new_frame, cctv_frame, row=row, column=column)
