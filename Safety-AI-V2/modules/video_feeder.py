@@ -59,6 +59,12 @@ class VideoFeeder:
     def get_current_video_index(self) -> int:
         return self.current_video_index
     
+    def get_current_video_datetime(self) -> datetime:
+        return self.video_recording_objects[self.current_video_index].get_current_frame_datetime()
+    
+    def get_current_video_date_str(self) -> str:
+        return self.video_recording_objects[self.current_video_index].get_current_frame_datetime().strftime("%Y-%m-%d %H:%M:%S")
+    
     def get_current_video_frame(self) -> None:
         frame, ret = self.video_recording_objects[self.current_video_index].get_current_frame()
         NVR_ip = self.video_recording_objects[self.current_video_index].get_NVR_ip()

@@ -4,7 +4,7 @@ videos/*
 videos/videos_to_process/*
 json_files/*
 yolo_models/*
-
+output_video.mp4
 utils/training_data*
 # Except the directory itself and the .gitkeep file
 !images/src/.gitkeep
