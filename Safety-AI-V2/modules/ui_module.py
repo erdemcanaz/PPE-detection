@@ -100,8 +100,11 @@ class UIModule:
         self.displayed_frames = []
 
         self.total_person_detected = 0
-        self.total_violation_detected = 0
+        self.total_hard_hat_violation_detected = 0
+        self.total_restricted_area_violation_detected = 0
         self.total_forklift_detected = 0
+        self.total_person_in_restrict_area = 0
+        self.total_person_in_hard_hat_area = 0
 
     def get_background_image(self):
         return copy.deepcopy(self.BACKGROUND_IMAGE)
@@ -159,7 +162,7 @@ class UIModule:
                     lineType) 
 
         bottomLeftCornerOfText = (500, 800)
-        cv2.putText(frame, "Total Violation Count: " + str(self.total_violation_detected),
+        cv2.putText(frame, "Total Hard-Hat Violation Count: " + str(self.total_hard_hat_violation_detected),
                     bottomLeftCornerOfText,
                     font,
                     fontScale,
@@ -167,6 +170,30 @@ class UIModule:
                     lineType)
         
         bottomLeftCornerOfText = (500, 850)
+        cv2.putText(frame, "Total in Hard-Hat Area Count: " + str(self.total_person_in_hard_hat_area),
+                    bottomLeftCornerOfText,
+                    font,
+                    fontScale,
+                    fontColor,
+                    lineType)
+        
+        bottomLeftCornerOfText = (500, 900)
+        cv2.putText(frame, "Total Restricted A. Violation Count: " + str(self.total_restricted_area_violation_detected),
+                    bottomLeftCornerOfText,
+                    font,
+                    fontScale,
+                    fontColor,
+                    lineType)
+        
+        bottomLeftCornerOfText = (500, 950)
+        cv2.putText(frame, "Total in Restricted Area Count: " + str(self.total_person_in_restrict_area),
+                    bottomLeftCornerOfText,
+                    font,
+                    fontScale,
+                    fontColor,
+                    lineType)
+        
+        bottomLeftCornerOfText = (500, 1000)
         cv2.putText(frame, "Total Forklift Count: " + str(self.total_forklift_detected),
                     bottomLeftCornerOfText,
                     font,
@@ -174,16 +201,16 @@ class UIModule:
                     fontColor,
                     lineType)
         
-        bottomLeftCornerOfText = (920, 770)
-        cv2.putText(frame, "Total Violation Rate",
+        bottomLeftCornerOfText = (1100, 750)
+        cv2.putText(frame, "HARD-HAT VIOLATION:",
                     bottomLeftCornerOfText,
                     font,
                     1,
                     fontColor,
                     lineType)
         
-        bottomLeftCornerOfText = (920, 820)
-        cv2.putText(frame, "% "+str(round(100*self.total_violation_detected/self.total_person_detected, 2)),
+        bottomLeftCornerOfText = (1100, 820)
+        cv2.putText(frame, "% "+str(round(100*self.total_hard_hat_violation_detected/(self.total_person_in_hard_hat_area+1), 2)),
                     bottomLeftCornerOfText,
                     font,
                     2,
@@ -245,10 +272,22 @@ class UIModule:
 
                 is_violating_restricted_area = person_evaluation["is_violating_restricted_area_rule"]
                 is_violating_hard_hat_area = person_evaluation["is_violating_hard_hat_rule"]
-                is_violating_height_rule = person_evaluation["is_violating_height_rule"]
+                is_violating_height_rule = person_evaluation["is_violating_height_rule"]                
                 is_violating = is_violating_restricted_area or is_violating_hard_hat_area or is_violating_height_rule
-                if is_violating:
-                    self.total_violation_detected += 1
+                
+
+                if is_violating_hard_hat_area:
+                    self.total_hard_hat_violation_detected += 1
+
+                if is_violating_restricted_area:
+                    self.total_restricted_area_violation_detected += 1
+
+                is_in_hard_hat_area = person_evaluation["is_in_hard_hat_rule_area"]
+                if is_in_hard_hat_area:
+                    self.total_person_in_hard_hat_area += 1
+                if is_violating_restricted_area:
+                    self.total_person_in_restrict_area += 1
+
 
                 person_x = person_evaluation["world_coordinate"][0][0]
                 person_y = person_evaluation["world_coordinate"][1][0]

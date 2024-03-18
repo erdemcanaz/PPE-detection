@@ -13,7 +13,7 @@ from scripts.camera import Camera
 
 frame_visualizer = FrameVisualizerSimple()
 video_feeder_object = VideoFeeder()
-detector_object = Detector(pose_model_index = 0, hard_hat_model_index = 0, forklift_model_index = 0)
+detector_object = Detector(pose_model_index = 4, hard_hat_model_index = 0, forklift_model_index = 0)
 memoryless_violation_evaluator_object = MemorylessViolationEvaluator()
 ui_module_object = UIModule()
 
@@ -25,10 +25,10 @@ recordings_to_check = all_recording_indexes
 # Replace 'output_video.mp4' with your desired output file name
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # 'mp4v' for .mp4 files, 'XVID' for .avi
 
-video_fps = 1 * 4
+video_fps = 3 * 6
 video_writer = cv2.VideoWriter('output_video.mp4', fourcc, video_fps, (1440, 810))  # Adjust frame rate and dimensions as needed
 
-skipping_second = 1 #initial skipping second, changes dynamically based on the detection results
+skipping_second = 3 #initial skipping second, changes dynamically based on the detection results
 while True: #process all recodings
     start_time = time.time()  
 
