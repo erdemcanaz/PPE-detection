@@ -29,12 +29,13 @@ model = YOLO(which_model).to(device)
 image = cv2.imread('pose_test_image.jpg')
 
 # Predict with the model
+number_of_iterations = 100
 start_time = time.time()
-for i in range(50):
+for i in range(number_of_iterations):
     results = model(image, show=False)
 end_time = time.time()
 elapsed_time = end_time - start_time
-print(f"FPS: {50/elapsed_time}")
+print(f"FPS: {number_of_iterations/elapsed_time}")
 
 # Close the window
 cv2.destroyAllWindows()
