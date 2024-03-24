@@ -8,5 +8,6 @@
 
 #ignore the python environment
 *env
+*env-cpu
 
 !local/.gitkeep

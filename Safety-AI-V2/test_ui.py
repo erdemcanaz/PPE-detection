@@ -13,7 +13,7 @@ from scripts.camera import Camera
 
 frame_visualizer = FrameVisualizerSimple()
 video_feeder_object = VideoFeeder()
-detector_object = Detector(pose_model_index = 4, hard_hat_model_index = 0, forklift_model_index = 0)
+detector_object = Detector(pose_model_index = 0, hard_hat_model_index = 0, forklift_model_index = 0)
 memoryless_violation_evaluator_object = MemorylessViolationEvaluator()
 ui_module_object = UIModule()
 
@@ -35,6 +35,8 @@ while True: #process all recodings
     iteration_detection_results = []   
     is_person_detected = False
     for recording_index in recordings_to_check:
+        start_time = time.time()
+        print(f"Checking recording index: {recording_index}")
         video_feeder_object.change_to_video(recording_index)
         frame, ret, NVR_ip, channel, uuid = video_feeder_object.get_current_video_frame() 
            
@@ -46,6 +48,10 @@ while True: #process all recodings
 
         if evaluation_results["number_of_persons"] > 0:
             is_person_detected = True
+
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        print(f"FPS: {1/elapsed_time} Recording index: {recording_index} processed in {elapsed_time} seconds")
 
     # if not is_person_detected:
     #     skipping_second = min(30, skipping_second + 2.5)
