@@ -32,6 +32,7 @@ image = cv2.imread('pose_test_image.jpg')
 number_of_iterations = 100
 start_time = time.time()
 for i in range(number_of_iterations):
+    print(f"Iteration: {i}/{number_of_iterations}")
     results = model(image, show=False)
 end_time = time.time()
 elapsed_time = end_time - start_time
