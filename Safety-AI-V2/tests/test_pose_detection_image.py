@@ -31,7 +31,7 @@ image = cv2.imread('pose_test_image.jpg')
 # Predict with the model
 start_time = time.time()
 for i in range(50):
-    results = model(image, show=True)
+    results = model(image, show=False)
 end_time = time.time()
 elapsed_time = end_time - start_time
 print(f"FPS: {50/elapsed_time}")
