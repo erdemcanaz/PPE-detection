@@ -3,6 +3,7 @@ import cv2
 import pprint
 
 yolo_models = [
+    'yolov8n-pose.pt',
     'yolov8s-pose.pt',
     'yolov8m-pose.pt',
     'yolov8l-pose.pt',
